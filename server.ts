@@ -117,12 +117,22 @@ if (!process.env.YANDEX_USER || !process.env.YANDEX_PASS) {
 
 const transporter = nodemailer.createTransport({
   host: 'smtp.yandex.ru',
-  port: 465,
-  secure: true,
+  port: 587,
+  secure: false, // Use STARTTLS on port 587
   auth: {
     user: process.env.YANDEX_USER,
     pass: process.env.YANDEX_PASS,
   },
+});
+
+// Verify SMTP connection on startup
+transporter.verify((error, success) => {
+  if (error) {
+    console.error('❌ ОШИБКА ПОЧТОВОГО СЕРВЕРА (SMTP):', error.message);
+    console.error('Проверьте YANDEX_USER и YANDEX_PASS в настройках хостинга.');
+  } else {
+    console.log('✅ Почтовый сервер готов к отправке писем');
+  }
 });
 
 // Configure multer for file uploads
