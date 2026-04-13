@@ -116,13 +116,22 @@ if (!process.env.YANDEX_USER || !process.env.YANDEX_PASS) {
 }
 
 const transporter = nodemailer.createTransport({
-  host: 'smtp.yandex.ru',
-  port: 587,
-  secure: false, // Use STARTTLS on port 587
+  host: 'smtp.yandex.com', // Try .com instead of .ru
+  port: 465,
+  secure: true, // Use SSL
   auth: {
     user: process.env.YANDEX_USER,
     pass: process.env.YANDEX_PASS,
   },
+  connectionTimeout: 15000, // 15 seconds
+  greetingTimeout: 15000,
+  socketTimeout: 20000,
+  debug: true, // Enable debug output
+  logger: true, // Log to console
+  tls: {
+    rejectUnauthorized: false, // Ignore self-signed cert issues
+    servername: 'smtp.yandex.com'
+  }
 });
 
 // Verify SMTP connection on startup
