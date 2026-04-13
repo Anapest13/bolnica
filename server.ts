@@ -380,7 +380,7 @@ async function initDb() {
     }
 
     // Seed Admin if not exists
-    const [admins]: any = await pool.query('SELECT * FROM patients WHERE role = "admin"');
+    const [admins]: any = await pool.query('SELECT * FROM patients WHERE role = ?', ['admin']);
     if (admins.length === 0) {
       const bcrypt = await import('bcryptjs');
       const hashedPassword = await bcrypt.hash('admin123', 10);
@@ -391,7 +391,7 @@ async function initDb() {
       console.log('Admin account created: admin@med.ru / admin123');
     } else {
       // Ensure existing admin is verified
-      await pool.query('UPDATE patients SET is_verified = true WHERE role = "admin"');
+      await pool.query('UPDATE patients SET is_verified = true WHERE role = ?', ['admin']);
     }
     console.log('Database initialized');
   } catch (error: any) {
@@ -718,8 +718,8 @@ async function startServer() {
     try {
       // Check if appointment belongs to user and is completed
       const [apts]: any = await pool.query(
-        'SELECT * FROM appointments WHERE id = ? AND patient_id = ? AND status = "completed"',
-        [appointmentId, req.user.id]
+        'SELECT * FROM appointments WHERE id = ? AND patient_id = ? AND status = ?',
+        [appointmentId, req.user.id, 'completed']
       );
       
       if (apts.length === 0) {
@@ -812,8 +812,8 @@ async function startServer() {
   app.patch('/api/appointments/:id/cancel', authenticate, async (req: any, res) => {
     try {
       await pool.query(
-        'UPDATE appointments SET status = "cancelled" WHERE id = ? AND patient_id = ?',
-        [req.params.id, req.user.id]
+        'UPDATE appointments SET status = ? WHERE id = ? AND patient_id = ?',
+        ['cancelled', req.params.id, req.user.id]
       );
       res.json({ success: true });
     } catch (e) {
@@ -892,13 +892,13 @@ async function startServer() {
   app.get('/api/admin/stats', authenticate, isAdmin, async (req: any, res) => {
     try {
       const [totalApts]: any = await pool.query('SELECT COUNT(*) as count FROM appointments');
-      const [totalPatients]: any = await pool.query('SELECT COUNT(*) as count FROM patients WHERE role = "patient"');
+      const [totalPatients]: any = await pool.query('SELECT COUNT(*) as count FROM patients WHERE role = ?', ['patient']);
       const [totalDoctors]: any = await pool.query('SELECT COUNT(*) as count FROM doctors');
-      const [completedApts]: any = await pool.query('SELECT COUNT(*) as count FROM appointments WHERE status = "completed"');
+      const [completedApts]: any = await pool.query('SELECT COUNT(*) as count FROM appointments WHERE status = ?', ['completed']);
       
       // New stats
       const [monthlyApts]: any = await pool.query('SELECT COUNT(*) as count FROM appointments WHERE MONTH(date) = MONTH(CURRENT_DATE) AND YEAR(date) = YEAR(CURRENT_DATE)');
-      const [cancelledApts]: any = await pool.query('SELECT COUNT(*) as count FROM appointments WHERE status = "cancelled"');
+      const [cancelledApts]: any = await pool.query('SELECT COUNT(*) as count FROM appointments WHERE status = ?', ['cancelled']);
       const [avgRating]: any = await pool.query('SELECT AVG(rating) as avg FROM doctors');
       const [topSpecialties]: any = await pool.query(`
         SELECT s.name, COUNT(a.id) as count 
