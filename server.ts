@@ -116,31 +116,25 @@ if (!process.env.YANDEX_USER || !process.env.YANDEX_PASS) {
 }
 
 const transporter = nodemailer.createTransport({
-  host: 'smtp.yandex.com', // Try .com instead of .ru
+  host: 'smtp.yandex.ru',
   port: 465,
-  secure: true, // Use SSL
+  secure: true,
   auth: {
     user: process.env.YANDEX_USER,
     pass: process.env.YANDEX_PASS,
   },
-  connectionTimeout: 15000, // 15 seconds
-  greetingTimeout: 15000,
-  socketTimeout: 20000,
-  debug: true, // Enable debug output
-  logger: true, // Log to console
-  tls: {
-    rejectUnauthorized: false, // Ignore self-signed cert issues
-    servername: 'smtp.yandex.com'
-  }
+  family: 4, // Принудительно IPv4 (решает проблему ENETUNREACH)
+  connectionTimeout: 20000,
+  greetingTimeout: 20000,
+  socketTimeout: 30000,
 });
 
 // Verify SMTP connection on startup
 transporter.verify((error, success) => {
   if (error) {
     console.error('❌ ОШИБКА ПОЧТОВОГО СЕРВЕРА (SMTP):', error.message);
-    console.error('Проверьте YANDEX_USER и YANDEX_PASS в настройках хостинга.');
   } else {
-    console.log('✅ Почтовый сервер готов к отправке писем');
+    console.log('✅ Почтовый сервер Яндекс готов к работе');
   }
 });
 
