@@ -38,11 +38,11 @@ export default function Header({ onNavigate, currentPage, user, onLogin, onLogou
             </div>
             <div className="absolute -top-1 -right-1 w-3 h-3 bg-teal-400 rounded-full border-2 border-white animate-pulse" />
           </div>
-          <div className="flex flex-col">
-            <span className="text-xl font-black text-slate-900 tracking-tight leading-none">
+          <div className="flex flex-col min-w-0">
+            <span className="text-sm md:text-xl font-black text-slate-900 tracking-tight leading-none truncate overflow-hidden">
               Дзун-Хемчикский ММЦ
             </span>
-            <span className="text-[10px] font-black text-teal-600 uppercase tracking-[0.2em] mt-1">
+            <span className="text-[8px] md:text-[10px] font-black text-teal-600 uppercase tracking-[0.2em] mt-1">
               ГБУЗ РТ
             </span>
           </div>

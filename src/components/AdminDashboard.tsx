@@ -242,8 +242,8 @@ export default function AdminDashboard({ onDataUpdate }: AdminDashboardProps) {
 
   return (
     <div className="min-h-screen bg-slate-50 flex">
-      {/* Sidebar */}
-      <div className="w-80 bg-slate-950 text-white p-8 flex flex-col hidden lg:flex">
+      {/* Sidebar Mobile Toggle or Bottom Nav could be added, for now let's make it fully responsive */}
+      <div className="w-80 bg-slate-950 text-white p-8 flex flex-col hidden lg:flex shrink-0">
         <div className="flex items-center gap-4 mb-16">
           <div className="p-3 bg-teal-500 rounded-2xl shadow-lg shadow-teal-500/20">
             <ShieldCheck className="w-8 h-8 text-white" />
@@ -300,23 +300,40 @@ export default function AdminDashboard({ onDataUpdate }: AdminDashboardProps) {
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto">
-        <header className="bg-white border-b border-slate-100 p-8 flex items-center justify-between sticky top-0 z-30">
+        <header className="bg-white border-b border-slate-100 p-4 md:p-8 flex flex-col md:flex-row md:items-center justify-between sticky top-0 z-30 gap-4">
           <div>
-            <h2 className="text-3xl font-black text-slate-900 tracking-tight">
+            <h2 className="text-xl md:text-3xl font-black text-slate-900 tracking-tight">
               {activeTab === 'overview' && 'Обзор системы'}
               {activeTab === 'appointments' && 'Управление записями'}
               {activeTab === 'doctors' && 'База врачей'}
               {activeTab === 'patients' && 'Список пациентов'}
+              {activeTab === 'news' && 'Новости'}
             </h2>
-            <p className="text-slate-400 font-medium">Добро пожаловать в панель управления</p>
+            <p className="text-xs md:text-sm text-slate-400 font-medium">Добро пожаловать в панель управления</p>
           </div>
 
-          <div className="flex items-center gap-6">
-            {/* Search and refresh button removed as per user request */}
+          <div className="flex items-center gap-3 md:gap-6 overflow-x-auto pb-2 md:pb-0 lg:hidden no-scrollbar">
+            {[
+              { id: 'overview', icon: LayoutDashboard },
+              { id: 'appointments', icon: Calendar },
+              { id: 'doctors', icon: Stethoscope },
+              { id: 'patients', icon: Users },
+              { id: 'news', icon: FileText },
+            ].map((item) => (
+              <button
+                key={item.id}
+                onClick={() => setActiveTab(item.id as any)}
+                className={`p-3 rounded-xl shrink-0 transition-all ${
+                  activeTab === item.id ? 'bg-teal-600 text-white shadow-lg' : 'bg-slate-50 text-slate-400'
+                }`}
+              >
+                <item.icon className="w-5 h-5" />
+              </button>
+            ))}
           </div>
         </header>
 
-        <main className="p-8">
+        <main className="p-4 md:p-8">
           <AnimatePresence mode="wait">
             {activeTab === 'overview' && (
               <motion.div
@@ -327,25 +344,25 @@ export default function AdminDashboard({ onDataUpdate }: AdminDashboardProps) {
                 className="space-y-10"
               >
                 {/* Stats Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-8">
                   {[
                     { label: 'Всего записей', value: stats?.appointments || 0, icon: Calendar, color: 'teal', trend: '+12%', bg: 'bg-teal-50', text: 'text-teal-600' },
                     { label: 'Пациентов', value: stats?.patients || 0, icon: Users, color: 'blue', trend: '+5%', bg: 'bg-blue-50', text: 'text-blue-600' },
                     { label: 'Врачей', value: stats?.doctors || 0, icon: Stethoscope, color: 'indigo', trend: '0%', bg: 'bg-indigo-50', text: 'text-indigo-600' },
                     { label: 'Завершено', value: stats?.completed || 0, icon: CheckCircle2, color: 'emerald', trend: '+18%', bg: 'bg-emerald-50', text: 'text-emerald-600' },
                   ].map((stat, i) => (
-                    <div key={i} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all group">
-                      <div className="flex items-start justify-between mb-6">
-                        <div className={`p-4 ${stat.bg} rounded-2xl group-hover:scale-110 transition-transform`}>
-                          <stat.icon className={`w-8 h-8 ${stat.text}`} />
+                    <div key={i} className="bg-white p-6 md:p-8 rounded-[1.8rem] md:rounded-[2.5rem] border border-slate-100 shadow-sm hover:shadow-xl transition-all group">
+                      <div className="flex items-start justify-between mb-4 md:mb-6">
+                        <div className={`p-3 md:p-4 ${stat.bg} rounded-xl md:rounded-2xl group-hover:scale-110 transition-transform`}>
+                          <stat.icon className={`w-6 h-6 md:w-8 md:h-8 ${stat.text}`} />
                         </div>
-                        <div className="flex items-center gap-1 text-emerald-500 text-xs font-black">
-                          <ArrowUpRight className="w-4 h-4" />
+                        <div className="flex items-center gap-1 text-emerald-500 text-[10px] md:text-xs font-black">
+                          <ArrowUpRight className="w-3 h-3 md:w-4 md:h-4" />
                           {stat.trend}
                         </div>
                       </div>
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
-                      <p className="text-4xl font-black text-slate-900 tracking-tight">{stat.value}</p>
+                      <p className="text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">{stat.label}</p>
+                      <p className="text-2xl md:text-4xl font-black text-slate-900 tracking-tight">{stat.value}</p>
                     </div>
                   ))}
                 </div>
@@ -501,25 +518,25 @@ export default function AdminDashboard({ onDataUpdate }: AdminDashboardProps) {
                 key="appointments"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
-                className="bg-white rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden"
+                className="bg-white rounded-[2rem] md:rounded-[3rem] border border-slate-100 shadow-sm overflow-hidden"
               >
-                <div className="p-8 border-b border-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div className="p-4 md:p-8 border-b border-slate-50 flex flex-col md:flex-row md:items-center justify-between gap-6">
                   <div className="flex items-center gap-4">
-                    <div className="p-3 bg-teal-50 rounded-2xl">
-                      <Calendar className="w-6 h-6 text-teal-600" />
+                    <div className="p-3 bg-teal-50 rounded-xl md:rounded-2xl">
+                      <Calendar className="w-5 h-5 md:w-6 md:h-6 text-teal-600" />
                     </div>
                     <div>
-                      <h3 className="text-xl font-black text-slate-900 tracking-tight">Все записи на прием</h3>
-                      <p className="text-xs text-slate-400 font-bold uppercase tracking-widest">Всего: {appointments.length}</p>
+                      <h3 className="text-lg md:text-xl font-black text-slate-900 tracking-tight">Все записи на прием</h3>
+                      <p className="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Всего: {appointments.length}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <div className="relative">
+                    <div className="relative w-full md:w-auto">
                       <Filter className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                       <select 
                         value={statusFilter}
                         onChange={(e) => setStatusFilter(e.target.value)}
-                        className="pl-12 pr-8 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none appearance-none cursor-pointer"
+                        className="w-full pl-12 pr-8 py-3 bg-slate-50 border border-slate-100 rounded-xl text-sm font-bold outline-none appearance-none cursor-pointer"
                       >
                         <option>Все статусы</option>
                         <option>Предстоит</option>
@@ -531,46 +548,46 @@ export default function AdminDashboard({ onDataUpdate }: AdminDashboardProps) {
                 </div>
 
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left">
+                  <table className="w-full text-left min-w-[600px]">
                     <thead>
                       <tr className="bg-slate-50/50">
-                        <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Пациент</th>
-                        <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Врач</th>
-                        <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Дата и Время</th>
-                        <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Статус</th>
-                        <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Действия</th>
+                        <th className="px-4 md:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Пациент</th>
+                        <th className="px-4 md:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Врач</th>
+                        <th className="px-4 md:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Дата и Время</th>
+                        <th className="px-4 md:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Статус</th>
+                        <th className="px-4 md:px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Действия</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
                       {filteredAppointments.map((apt) => (
                         <tr key={apt.id} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="px-8 py-6">
-                            <div className="font-bold text-slate-900">{apt.patientName}</div>
-                            <div className="text-xs text-slate-400">{apt.patientEmail}</div>
-                            <div className="text-[10px] text-teal-600 font-bold">{apt.patientPhone}</div>
+                          <td className="px-4 md:px-8 py-6">
+                            <div className="font-bold text-slate-900 text-sm md:text-base">{apt.patientName}</div>
+                            <div className="text-[10px] md:text-xs text-slate-400 truncate max-w-[150px]">{apt.patientEmail}</div>
+                            <div className="text-[9px] md:text-[10px] text-teal-600 font-bold">{apt.patientPhone}</div>
                           </td>
-                          <td className="px-8 py-6">
-                            <div className="font-bold text-slate-900">{apt.doctorName}</div>
-                            <div className="text-xs text-teal-600 font-bold uppercase tracking-tighter">{apt.specialty}</div>
+                          <td className="px-4 md:px-8 py-6">
+                            <div className="font-bold text-slate-900 text-sm md:text-base">{apt.doctorName}</div>
+                            <div className="text-[9px] md:text-[10px] text-teal-600 font-bold uppercase tracking-tighter">{apt.specialty}</div>
                           </td>
-                          <td className="px-8 py-6">
-                            <div className="font-bold text-slate-900">
+                          <td className="px-4 md:px-8 py-6">
+                            <div className="font-bold text-slate-900 text-sm md:text-base">
                               {(() => {
                                 try {
                                   const datePart = apt.date.includes('T') ? apt.date.split('T')[0] : apt.date;
-                                  return format(parseISO(datePart), 'd MMM yyyy', { locale: ru });
+                                  return format(parseISO(datePart), 'd MMM yy', { locale: ru });
                                 } catch (e) {
                                   return apt.date;
                                 }
                               })()}
                             </div>
-                            <div className="text-xs text-slate-400 font-bold">{apt.time.slice(0, 5)}</div>
+                            <div className="text-[10px] md:text-xs text-slate-400 font-bold">{apt.time.slice(0, 5)}</div>
                           </td>
-                          <td className="px-8 py-6">
+                          <td className="px-4 md:px-8 py-6">
                             <select 
                               value={apt.status}
                               onChange={(e) => handleUpdateStatus(apt.id, e.target.value)}
-                              className={`text-[10px] px-3 py-1.5 rounded-full font-black uppercase tracking-widest border-none outline-none cursor-pointer ${
+                              className={`text-[8px] md:text-[10px] px-2 md:px-3 py-1 md:py-1.5 rounded-full font-black uppercase tracking-widest border-none outline-none cursor-pointer ${
                                 apt.status === 'scheduled' ? 'bg-blue-50 text-blue-600' : 
                                 apt.status === 'cancelled' ? 'bg-red-50 text-red-600' : 
                                 'bg-emerald-50 text-emerald-600'
@@ -581,31 +598,31 @@ export default function AdminDashboard({ onDataUpdate }: AdminDashboardProps) {
                               <option value="cancelled">Отменено</option>
                             </select>
                           </td>
-                          <td className="px-8 py-6 text-right">
-                            <div className="flex items-center justify-end gap-2">
+                          <td className="px-4 md:px-8 py-6 text-right">
+                            <div className="flex items-center justify-end gap-1 md:gap-2">
                               {apt.status === 'scheduled' && (
                                 <button 
                                   onClick={() => setShowNotesModal({ id: apt.id, notes: apt.notes || '', attachment_url: apt.attachment_url })}
-                                  className="p-3 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
+                                  className="p-2 md:p-3 text-emerald-600 hover:bg-emerald-50 rounded-xl transition-all"
                                   title="Завершить и добавить заметки"
                                 >
-                                  <CheckCircle2 className="w-5 h-5" />
+                                  <CheckCircle2 className="w-4 h-4 md:w-5 md:h-5" />
                                 </button>
                               )}
                               {apt.status === 'completed' && (
                                 <button 
                                   onClick={() => setShowNotesModal({ id: apt.id, notes: apt.notes || '', attachment_url: apt.attachment_url })}
-                                  className="p-3 text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
+                                  className="p-2 md:p-3 text-blue-600 hover:bg-blue-50 rounded-xl transition-all"
                                   title="Редактировать заметки"
                                 >
-                                  <FileText className="w-5 h-5" />
+                                  <FileText className="w-4 h-4 md:w-5 md:h-5" />
                                 </button>
                               )}
                               <button 
                                 onClick={() => handleDeleteAppointment(apt.id)}
-                                className="p-3 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
+                                className="p-2 md:p-3 text-slate-300 hover:text-rose-600 hover:bg-rose-50 rounded-xl transition-all"
                               >
-                                <Trash2 className="w-5 h-5" />
+                                <Trash2 className="w-4 h-4 md:w-5 md:h-5" />
                               </button>
                             </div>
                           </td>
@@ -736,7 +753,7 @@ export default function AdminDashboard({ onDataUpdate }: AdminDashboardProps) {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-50">
-                      {filteredPatients.length === 0 ? (
+                      {(patients || []).length === 0 ? (
                         <tr>
                           <td colSpan={4} className="px-8 py-20 text-center">
                             <div className="flex flex-col items-center gap-4">
@@ -744,11 +761,11 @@ export default function AdminDashboard({ onDataUpdate }: AdminDashboardProps) {
                                 <User className="w-12 h-12 text-slate-200" />
                               </div>
                               <p className="text-slate-400 font-bold text-xl">Пациенты не найдены</p>
-                              <p className="text-slate-400 text-sm">Попробуйте изменить параметры поиска или добавьте нового пациента</p>
+                              <p className="text-slate-400 text-sm">Данные загружаются или список пуст</p>
                             </div>
                           </td>
                         </tr>
-                      ) : filteredPatients.map((pt) => (
+                      ) : (filteredPatients || []).map((pt) => (
                         <tr key={pt.id} className="hover:bg-slate-50/50 transition-colors">
                           <td className="px-8 py-6">
                             <div className="flex items-center gap-4">

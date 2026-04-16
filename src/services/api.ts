@@ -3,6 +3,20 @@ import { Doctor, Specialty, Appointment } from '../types';
 
 const API_URL = '/api';
 
+// Global error handling for session expiration
+axios.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response?.status === 401) {
+      console.warn('Session expired, logging out...');
+      localStorage.removeItem('med_user');
+      // Use window.location.href to force a full reload and clear state
+      window.location.href = '/?expired=true';
+    }
+    return Promise.reject(error);
+  }
+);
+
 const getAuthHeader = () => {
   try {
     const userStr = localStorage.getItem('med_user');

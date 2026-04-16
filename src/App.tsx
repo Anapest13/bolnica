@@ -439,24 +439,25 @@ export default function App() {
                   {/* Health Tip Banner */}
                   {healthTip && (
                     <motion.div 
+                      key="health-tip"
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="bg-slate-950 p-10 rounded-[3.5rem] shadow-3xl text-white flex flex-col md:flex-row items-center gap-10 relative overflow-hidden group"
+                      className="bg-slate-950 p-6 md:p-10 rounded-[2.5rem] md:rounded-[3.5rem] shadow-3xl text-white flex flex-col md:flex-row items-center gap-6 md:gap-10 relative overflow-hidden group"
                     >
                       <div className="absolute top-0 right-0 p-12 opacity-5 group-hover:rotate-12 transition-transform duration-1000">
                         <Sparkles className="w-64 h-64" />
                       </div>
                       <div className="absolute -bottom-24 -left-24 w-64 h-64 bg-teal-500/10 rounded-full blur-[100px]" />
                       
-                      <div className="p-6 bg-teal-500/20 rounded-[2.5rem] shrink-0 border border-teal-500/20 relative z-10">
-                        <Bot className="w-12 h-12 text-teal-400" />
+                      <div className="p-4 md:p-6 bg-teal-500/20 rounded-[1.5rem] md:rounded-[2.5rem] shrink-0 border border-teal-500/20 relative z-10">
+                        <Bot className="w-8 h-8 md:w-12 md:h-12 text-teal-400" />
                       </div>
                       <div className="relative z-10 text-center md:text-left space-y-2">
                         <div className="flex items-center justify-center md:justify-start gap-3 mb-2">
                           <span className="px-3 py-1 bg-teal-500/20 text-teal-400 text-[10px] font-black rounded-full uppercase tracking-[0.2em]">Совет дня от ИИ</span>
                           <div className="w-2 h-2 bg-teal-500 rounded-full animate-pulse" />
                         </div>
-                        <p className="text-slate-300 text-2xl leading-relaxed font-black tracking-tight italic">"{healthTip}"</p>
+                        <p className="text-slate-300 text-lg md:text-2xl leading-relaxed font-black tracking-tight italic">"{healthTip}"</p>
                       </div>
                     </motion.div>
                   )}
@@ -464,31 +465,32 @@ export default function App() {
                   {/* Next Appointment Reminder */}
                   {nextAppointment && (
                     <motion.div 
+                      key="next-appointment"
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
-                      className="bg-white p-10 rounded-[3.5rem] shadow-[0_40px_100px_-30px_rgba(0,0,0,0.1)] border border-slate-50 flex flex-col lg:flex-row items-center justify-between gap-10 hover:shadow-[0_60px_150px_-30px_rgba(0,0,0,0.2)] transition-all group relative overflow-hidden"
+                      className="bg-white p-6 md:p-10 rounded-[2.5rem] md:rounded-[3.5rem] shadow-xl border border-slate-50 flex flex-col lg:flex-row items-center justify-between gap-6 md:gap-10 hover:shadow-2xl transition-all group relative overflow-hidden"
                     >
-                      <div className="absolute top-0 left-0 w-2 h-full bg-teal-500" />
-                      <div className="flex items-center gap-8 relative z-10">
-                        <div className="p-6 bg-teal-50 rounded-[2.5rem] group-hover:bg-teal-100 transition-colors">
-                          <Calendar className="w-10 h-10 text-teal-600" />
+                      <div className="absolute top-0 left-0 w-2 h-full bg-teal-500 hidden md:block" />
+                      <div className="flex items-center gap-6 md:gap-8 relative z-10">
+                        <div className="p-4 md:p-6 bg-teal-50 rounded-2xl md:rounded-[2.5rem] group-hover:bg-teal-100 transition-colors shrink-0">
+                          <Calendar className="w-8 h-8 md:w-10 md:h-10 text-teal-600" />
                         </div>
-                        <div className="text-center lg:text-left space-y-1">
-                          <p className="text-[10px] font-black text-teal-600 uppercase tracking-[0.3em] mb-2">Ваш ближайший визит</p>
-                          <h3 className="font-black text-3xl text-slate-900 tracking-tight">{nextAppointment.doctorName}</h3>
-                          <div className="flex items-center justify-center lg:justify-start gap-4 mt-3">
-                            <div className="flex items-center gap-2 px-4 py-1.5 bg-slate-50 rounded-full text-slate-600 font-bold text-sm">
+                        <div className="text-center md:text-left space-y-1">
+                          <p className="text-[8px] md:text-[10px] font-black text-teal-600 uppercase tracking-[0.3em] mb-1 md:mb-2">Ваш ближайший визит</p>
+                          <h3 className="font-black text-xl md:text-3xl text-slate-900 tracking-tight">{nextAppointment.doctorName}</h3>
+                          <div className="flex items-center justify-center md:justify-start gap-2 md:gap-4 mt-3">
+                            <div className="flex items-center gap-2 px-3 md:px-4 py-1.5 bg-slate-50 rounded-full text-slate-600 font-bold text-xs md:text-sm">
                               <Calendar className="w-4 h-4 text-teal-500" /> 
                               {(() => {
                                 try {
                                   const datePart = nextAppointment.date.includes('T') ? nextAppointment.date.split('T')[0] : nextAppointment.date;
-                                  return format(parseISO(datePart), 'd MMMM yyyy', { locale: ru });
+                                  return format(parseISO(datePart), 'd MMM yy', { locale: ru });
                                 } catch (e) {
                                   return nextAppointment.date;
                                 }
                               })()}
                             </div>
-                            <div className="flex items-center gap-2 px-4 py-1.5 bg-slate-50 rounded-full text-slate-600 font-bold text-sm">
+                            <div className="flex items-center gap-2 px-3 md:px-4 py-1.5 bg-slate-50 rounded-full text-slate-600 font-bold text-xs md:text-sm">
                               <Clock className="w-4 h-4 text-teal-500" /> {nextAppointment.time.slice(0, 5)}
                             </div>
                           </div>
@@ -496,7 +498,7 @@ export default function App() {
                       </div>
                       <button 
                         onClick={() => setCurrentPage('appointments')}
-                        className="w-full lg:w-auto px-10 py-6 bg-slate-950 text-white rounded-[2rem] font-black text-lg hover:bg-teal-600 transition-all flex items-center justify-center gap-4 shadow-2xl relative z-10 group"
+                        className="w-full lg:w-auto px-6 md:px-10 py-5 bg-slate-950 text-white rounded-2xl font-black text-sm md:text-lg hover:bg-teal-600 transition-all flex items-center justify-center gap-4 shadow-2xl relative z-10 group"
                       >
                         Управление записью 
                         <ChevronRight className="w-6 h-6 group-hover:translate-x-2 transition-transform" />
@@ -505,7 +507,7 @@ export default function App() {
                   )}
                 </div>
 
-                <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-10">
+                <div className="container mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-10">
                   {[
                     { label: 'Предстоящие приемы', value: appointments.filter(a => a.status === 'scheduled').length, icon: Calendar, color: 'text-blue-600', bg: 'bg-blue-50' },
                     { label: 'Завершенные визиты', value: appointments.filter(a => a.status === 'completed').length, icon: CheckCircle2, color: 'text-emerald-600', bg: 'bg-emerald-50' },
@@ -516,15 +518,15 @@ export default function App() {
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: i * 0.1 }}
-                      whileHover={{ y: -10, scale: 1.02 }}
-                      className="bg-white p-10 rounded-[3.5rem] shadow-[0_30px_80px_-20px_rgba(0,0,0,0.05)] border border-slate-50 flex items-center gap-8 group"
+                      whileHover={{ y: -5 }}
+                      className="bg-white p-6 md:p-10 rounded-3xl md:rounded-[3.5rem] shadow-sm border border-slate-50 flex items-center gap-6 md:gap-8 group"
                     >
-                      <div className={`p-6 ${stat.bg} rounded-[2rem] group-hover:scale-110 transition-transform duration-500`}>
-                        <stat.icon className={`w-10 h-10 ${stat.color}`} />
+                      <div className={`p-4 md:p-6 ${stat.bg} rounded-2xl md:rounded-[2rem] group-hover:scale-110 transition-transform duration-500 shrink-0`}>
+                        <stat.icon className={`w-8 h-8 md:w-10 md:h-10 ${stat.color}`} />
                       </div>
                       <div>
                         <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-1">{stat.label}</p>
-                        <p className="text-4xl font-black text-slate-900 tracking-tight">{stat.value}</p>
+                        <p className="text-2xl md:text-4xl font-black text-slate-900 tracking-tight">{stat.value}</p>
                       </div>
                     </motion.div>
                   ))}

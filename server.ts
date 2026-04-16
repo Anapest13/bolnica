@@ -912,37 +912,39 @@ async function startServer() {
 
   app.get('/api/admin/stats', authenticate, isAdmin, async (req: any, res) => {
     try {
+      console.log('Fetching admin stats...');
       const [totalApts]: any = await pool.query('SELECT COUNT(*) as count FROM appointments');
       const [totalPatients]: any = await pool.query('SELECT COUNT(*) as count FROM patients WHERE role = ?', ['patient']);
       const [totalDoctors]: any = await pool.query('SELECT COUNT(*) as count FROM doctors');
       const [completedApts]: any = await pool.query('SELECT COUNT(*) as count FROM appointments WHERE status = ?', ['completed']);
       
-      // New stats
       const [monthlyApts]: any = await pool.query('SELECT COUNT(*) as count FROM appointments WHERE MONTH(date) = MONTH(CURRENT_DATE) AND YEAR(date) = YEAR(CURRENT_DATE)');
       const [cancelledApts]: any = await pool.query('SELECT COUNT(*) as count FROM appointments WHERE status = ?', ['cancelled']);
-      const [avgRating]: any = await pool.query('SELECT AVG(rating) as avg FROM doctors');
+      const [avgRating]: any = await pool.query('SELECT COALESCE(AVG(rating), 0) as avg FROM doctors');
+      
       const [topSpecialties]: any = await pool.query(`
-        SELECT s.name, COUNT(a.id) as count 
+        SELECT COALESCE(s.name, 'Без категории') as name, COUNT(a.id) as count 
         FROM appointments a 
         JOIN doctors d ON a.doctor_id = d.id 
-        JOIN specialties s ON d.specialty_id = s.id 
+        LEFT JOIN specialties s ON d.specialty_id = s.id 
         GROUP BY s.name 
         ORDER BY count DESC 
         LIMIT 3
       `);
 
       res.json({
-        appointments: totalApts[0].count,
-        patients: totalPatients[0].count,
-        doctors: totalDoctors[0].count,
-        completed: completedApts[0].count,
-        monthly: monthlyApts[0].count,
-        cancelled: cancelledApts[0].count,
-        avgRating: parseFloat(avgRating[0].avg || 0).toFixed(1),
-        topSpecialties
+        appointments: totalApts[0]?.count || 0,
+        patients: totalPatients[0]?.count || 0,
+        doctors: totalDoctors[0]?.count || 0,
+        completed: completedApts[0]?.count || 0,
+        monthly: monthlyApts[0]?.count || 0,
+        cancelled: cancelledApts[0]?.count || 0,
+        avgRating: parseFloat(avgRating[0]?.avg || 0).toFixed(1),
+        topSpecialties: Array.isArray(topSpecialties) ? topSpecialties : []
       });
     } catch (e) {
-      res.status(500).json({ error: 'Database error' });
+      console.error('Admin Stats Error:', e);
+      res.status(500).json({ error: 'Database error fetching stats' });
     }
   });
 
@@ -1093,12 +1095,17 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.resolve(__dirname, 'dist');
-    console.log('Serving static files from:', distPath);
+    const assetsPath = path.resolve(distPath, 'assets');
     
-    // Отдаем статику (скрипты, стили)
+    console.log('--- PRODUCTION MODE ---');
+    console.log('Dist Path:', distPath);
+    console.log('Assets Path:', assetsPath);
+    console.log('Dist folder exists:', fs.existsSync(distPath));
+    console.log('Assets folder exists:', fs.existsSync(assetsPath));
+    console.log('-----------------------');
+    
     app.use(express.static(distPath));
     
-    // Все остальные запросы направляем на index.html (для работы SPA)
     app.get('*', (req, res) => {
       res.sendFile(path.resolve(distPath, 'index.html'));
     });
