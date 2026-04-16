@@ -223,7 +223,7 @@ export default function SymptomAssistant({ doctors, onSelectDoctor, user }: Symp
   };
 
   return (
-    <div className="max-w-5xl mx-auto pt-2 md:pt-12 pb-2 px-2 md:px-4 h-[calc(100dvh-80px)] md:h-[850px] flex flex-col lg:flex-row gap-4 md:gap-8 overflow-hidden">
+    <div className="max-w-5xl mx-auto pt-0 md:pt-12 pb-0 md:pb-2 px-0 md:px-4 h-full md:h-[850px] flex flex-col lg:flex-row gap-0 md:gap-8 overflow-hidden">
       {/* Sidebar Info - Hidden on mobile */}
       <div className="hidden lg:flex lg:w-80 flex-col gap-6">
         <div className="bg-slate-900 p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden">
@@ -269,7 +269,7 @@ export default function SymptomAssistant({ doctors, onSelectDoctor, user }: Symp
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col bg-white rounded-2xl md:rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden relative">
+      <div className="flex-1 flex flex-col bg-white md:rounded-[3rem] shadow-2xl border-x md:border border-slate-100 overflow-hidden relative">
         {/* Chat Header */}
         <div className="px-4 md:px-8 py-3 md:py-6 border-b border-slate-50 flex items-center justify-between bg-slate-50/30 shrink-0">
           <div className="flex items-center gap-3 md:gap-4">
@@ -294,7 +294,11 @@ export default function SymptomAssistant({ doctors, onSelectDoctor, user }: Symp
         </div>
 
         {/* Messages */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 md:p-8 space-y-4 md:space-y-8 scroll-smooth no-scrollbar">
+        <div 
+          ref={scrollRef} 
+          className="flex-1 overflow-y-auto p-3 md:p-8 space-y-4 md:space-y-8 scroll-smooth no-scrollbar"
+          style={{ overscrollBehavior: 'contain' }}
+        >
           <AnimatePresence initial={false}>
             {messages.map((msg, i) => (
               <motion.div

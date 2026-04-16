@@ -462,10 +462,13 @@ async function startServer() {
     const { name, email, password, phone } = req.body;
     
     try {
-      // ... (existing validation code)
+      if (!name || !email || !password || !phone) {
+        return res.status(400).json({ error: 'Все поля обязательны для заполнения' });
+      }
+
       const domainExists = await checkEmailDomain(email);
       if (!domainExists) {
-        return res.status(400).json({ error: 'Указанный email адрес не существует или недоступен' });
+        return res.status(400).json({ error: 'Указанный email адрес не существует или почтовый сервер недоступен' });
       }
 
       const [existing]: any = await pool.query('SELECT id FROM patients WHERE email = ?', [email]);
