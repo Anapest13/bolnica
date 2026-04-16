@@ -112,8 +112,6 @@ async function checkEmailDomain(email: string): Promise<boolean> {
 
 dotenv.config();
 
-const __dirname = path.resolve();
-
 // Configure Nodemailer for Yandex
 if (!process.env.YANDEX_USER || !process.env.YANDEX_PASS) {
   console.warn('⚠️ ВНИМАНИЕ: Переменные окружения YANDEX_USER или YANDEX_PASS не установлены. Отправка писем не будет работать.');
