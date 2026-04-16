@@ -142,18 +142,39 @@ export default function SymptomAssistant({ doctors, onSelectDoctor, user }: Symp
       });
 
       const textResponse = response.choices[0]?.message?.content || 'Извините, я не смог обработать ваш запрос. Попробуйте перефразировать.';
-      const recommendationMatch = textResponse.match(/\[RECOMMEND:?\s*(.*?)\]/i);
+      
+      // Ищем метку [RECOMMEND: ...] или просто упоминание врача в конце
+      const recommendationMatch = textResponse.match(/\[RECOMMEND:?\s*(.*?)\]/i) || textResponse.match(/РЕКОМЕНДАЦИЯ:?\s*(.*)/i);
       let recommendedDoctor: Doctor | undefined;
 
       if (recommendationMatch) {
-        const doctorName = recommendationMatch[1].replace(/[.!?]$/, '').trim().toLowerCase();
+        const rawMatch = recommendationMatch[1].replace(/[.!?\]]$/, '').trim().toLowerCase();
+        
+        // 1. Пытаемся найти по имени (частичное совпадение)
         recommendedDoctor = doctors.find(d => {
           const dName = d.name.toLowerCase();
-          return dName.includes(doctorName) || doctorName.includes(dName);
+          return dName.includes(rawMatch) || rawMatch.includes(dName);
         });
+
+        // 2. Если по имени не нашли, пытаемся найти по специальности
+        if (!recommendedDoctor) {
+          recommendedDoctor = doctors.find(d => {
+            const dSpec = d.specialty.toLowerCase();
+            return dSpec.includes(rawMatch) || rawMatch.includes(dSpec);
+          });
+        }
+        
+        // 3. Если всё еще не нашли, берем первого врача, чья специальность упомянута в тексте ответа
+        if (!recommendedDoctor) {
+          recommendedDoctor = doctors.find(d => rawMatch.includes(d.specialty.toLowerCase()));
+        }
       }
 
-      const cleanText = textResponse.replace(/\[RECOMMEND:?\s*.*?\]/i, '').trim();
+      // Очищаем текст от любых технических меток
+      const cleanText = textResponse
+        .replace(/\[RECOMMEND:?\s*.*?\]/gi, '')
+        .replace(/РЕКОМЕНДАЦИЯ:?\s*.*/gi, '')
+        .trim();
       setMessages(prev => [...prev, { 
         role: 'assistant', 
         content: cleanText,
