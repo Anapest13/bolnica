@@ -9,7 +9,7 @@ import SymptomAssistant from './components/SymptomAssistant';
 import AdminDashboard from './components/AdminDashboard';
 import UserProfile from './components/UserProfile';
 import { Bot, Sparkles, AlertCircle, Calendar, Clock, User, LogIn, LogOut, Search, Filter, ChevronRight, Star, Award, Phone, Mail, Lock, CheckCircle2, ShieldCheck, FileText, X } from 'lucide-react';
-import { GoogleGenAI } from '@google/genai';
+import OpenAI from 'openai';
 import { api } from './services/api';
 import { Doctor, Appointment } from './types';
 import { motion, AnimatePresence } from 'motion/react';
@@ -101,13 +101,27 @@ export default function App() {
         return;
       }
 
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.1-flash-lite-preview',
-        contents: 'Дай один короткий и полезный совет по здоровью на сегодня (на русском языке). Максимум 2 предложения.',
+      const apiKey = process.env.DEEPSEEK_API_KEY;
+      if (!apiKey) {
+        setHealthTip('Пейте больше воды и будьте здоровы!');
+        return;
+      }
+
+      const openai = new OpenAI({
+        apiKey: apiKey,
+        baseURL: 'https://api.deepseek.com',
+        dangerouslyAllowBrowser: true
+      });
+
+      const response = await openai.chat.completions.create({
+        model: 'deepseek-chat',
+        messages: [
+          { role: 'user', content: 'Дай один короткий и полезный совет по здоровью на сегодня (на русском языке). Максимум 2 предложения.' }
+        ],
+        max_tokens: 100,
       });
       
-      const tip = response.text || 'Пейте больше воды и будьте здоровы!';
+      const tip = response.choices[0]?.message?.content || 'Пейте больше воды и будьте здоровы!';
       setHealthTip(tip);
       
       // Save to cache

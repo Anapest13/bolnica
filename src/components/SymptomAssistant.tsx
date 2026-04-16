@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Send, Bot, User, Sparkles, ArrowRight, Loader2, Info, ShieldCheck, BrainCircuit } from 'lucide-react';
-import { GoogleGenAI } from '@google/genai';
+import OpenAI from 'openai';
 import { Doctor } from '../types';
 
 interface SymptomAssistantProps {
@@ -70,11 +70,16 @@ export default function SymptomAssistant({ doctors, onSelectDoctor, user }: Symp
     setIsLoading(true);
 
     try {
-      const apiKey = process.env.GEMINI_API_KEY;
+      const apiKey = process.env.DEEPSEEK_API_KEY;
       if (!apiKey) {
         throw new Error('API_KEY_MISSING');
       }
-      const ai = new GoogleGenAI({ apiKey });
+      
+      const openai = new OpenAI({
+        apiKey: apiKey,
+        baseURL: 'https://api.deepseek.com',
+        dangerouslyAllowBrowser: true
+      });
       
       // Prepare doctor list for the prompt
       const doctorList = doctors.map(d => `- ${d.name} (${d.specialty}): ${d.description}`).join('\n');
@@ -102,16 +107,15 @@ export default function SymptomAssistant({ doctors, onSelectDoctor, user }: Symp
         Если симптомы критические (сильная боль в груди, потеря сознания и т.д.), СРОЧНО рекомендуй вызвать скорую помощь.
       `;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.1-flash-lite-preview',
-        contents: prompt,
-        config: {
-          temperature: 0.9, // Увеличено для большего разнообразия
-          topP: 0.9,
-        }
+      const response = await openai.chat.completions.create({
+        model: 'deepseek-chat',
+        messages: [
+          { role: 'user', content: prompt }
+        ],
+        temperature: 0.9,
       });
 
-      const textResponse = response.text || 'Извините, я не смог обработать ваш запрос. Попробуйте перефразировать.';
+      const textResponse = response.choices[0]?.message?.content || 'Извините, я не смог обработать ваш запрос. Попробуйте перефразировать.';
       const recommendationMatch = textResponse.match(/\[RECOMMEND: (.*?)\]/);
       let recommendedDoctor: Doctor | undefined;
 
@@ -202,7 +206,7 @@ export default function SymptomAssistant({ doctors, onSelectDoctor, user }: Symp
             </div>
             <div className="flex items-center gap-2 mb-4">
               <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-              <span className="text-xs font-black text-slate-900">Gemini 3 Flash Online</span>
+              <span className="text-xs font-black text-slate-900">DeepSeek Chat Online</span>
             </div>
             <button 
               onClick={clearHistory}
@@ -356,7 +360,7 @@ export default function SymptomAssistant({ doctors, onSelectDoctor, user }: Symp
           </div>
           <div className="mt-4 flex items-center justify-center gap-6 text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
             <span className="flex items-center gap-1.5"><ShieldCheck className="w-3 h-3" /> Конфиденциально</span>
-            <span className="flex items-center gap-1.5"><Sparkles className="w-3 h-3" /> Gemini 3 Flash</span>
+            <span className="flex items-center gap-1.5"><Sparkles className="w-3 h-3" /> DeepSeek V3</span>
             <span className="flex items-center gap-1.5"><Info className="w-3 h-3" /> Не является диагнозом</span>
           </div>
         </div>
