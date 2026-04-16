@@ -280,7 +280,10 @@ export default function SymptomAssistant({ doctors, onSelectDoctor, user }: Symp
               <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 md:w-4 md:h-4 bg-green-500 rounded-full border-2 border-white" />
             </div>
             <div>
-              <h3 className="text-sm md:text-xl font-black text-slate-900 tracking-tight">ИИ-Ассистент</h3>
+              <div className="flex items-center gap-1.5">
+                <h3 className="text-sm md:text-xl font-black text-slate-900 tracking-tight">ИИ-Ассистент</h3>
+                <span className="text-[6px] md:text-[8px] font-black bg-slate-100 px-1 rounded text-slate-400">v2.1</span>
+              </div>
               <p className="text-[7px] md:text-[10px] font-black text-teal-600 uppercase tracking-widest">AI Diagnostics Support</p>
             </div>
           </div>
