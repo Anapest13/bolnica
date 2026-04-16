@@ -123,16 +123,20 @@ const transporter = nodemailer.createTransport({
     user: process.env.YANDEX_USER,
     pass: process.env.YANDEX_PASS,
   },
-  family: 4, // Принудительно IPv4 (решает проблему ENETUNREACH)
+  family: 4, // Force IPv4 to avoid ENETUNREACH on some hosts
   connectionTimeout: 20000,
   greetingTimeout: 20000,
   socketTimeout: 30000,
+  tls: {
+    rejectUnauthorized: false // Helps with some proxy/firewall issues
+  }
 });
 
 // Verify SMTP connection on startup
 transporter.verify((error, success) => {
   if (error) {
     console.error('❌ ОШИБКА ПОЧТОВОГО СЕРВЕРА (SMTP):', error.message);
+    console.error('Убедитесь, что в Яндексе включен доступ через почтовые клиенты и создан "Пароль приложения".');
   } else {
     console.log('✅ Почтовый сервер Яндекс готов к работе');
   }
@@ -190,9 +194,11 @@ async function initDb() {
       ssl: process.env.DB_HOST && !process.env.DB_HOST.includes('localhost') ? { rejectUnauthorized: false } : undefined
     });
     
-    await connection.query(`CREATE DATABASE IF NOT EXISTS ${process.env.DB_NAME || 'medical_db'}`);
+    await connection.query(`CREATE DATABASE IF NOT EXISTS \`${process.env.DB_NAME || 'medical_db'}\``);
     await connection.end();
     console.log(`Database "${process.env.DB_NAME || 'medical_db'}" verified/created.`);
+
+    await pool.query(`USE \`${process.env.DB_NAME || 'medical_db'}\``);
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS specialties (
@@ -490,7 +496,7 @@ async function startServer() {
           to: email,
           subject: 'Подтверждение регистрации',
           html: `
-            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; rounded: 16px;">
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 16px;">
               <h1 style="color: #0d9488;">Добро пожаловать!</h1>
               <p style="color: #475569; font-size: 16px;">Для завершения регистрации, пожалуйста, подтвердите ваш email, нажав на кнопку ниже:</p>
               <a href="${verificationLink}" style="display: inline-block; background-color: #0d9488; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0;">Подтвердить Email</a>
@@ -545,7 +551,7 @@ async function startServer() {
         to: email,
         subject: 'Подтверждение регистрации (повторно)',
         html: `
-          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; rounded: 16px;">
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 16px;">
             <h1 style="color: #0d9488;">Подтверждение регистрации</h1>
             <p style="color: #475569; font-size: 16px;">Вы запросили повторную отправку ссылки для подтверждения email. Пожалуйста, нажмите на кнопку ниже:</p>
             <a href="${verificationLink}" style="display: inline-block; background-color: #0d9488; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0;">Подтвердить Email</a>
@@ -624,7 +630,7 @@ async function startServer() {
         to: email,
         subject: 'Восстановление пароля',
         html: `
-          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; rounded: 16px;">
+          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 16px;">
             <h1 style="color: #0d9488;">Восстановление пароля</h1>
             <p style="color: #475569; font-size: 16px;">Вы получили это письмо, потому что запросили восстановление пароля. Пожалуйста, нажмите на кнопку ниже для установки нового пароля:</p>
             <a href="${resetLink}" style="display: inline-block; background-color: #0d9488; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0;">Сбросить пароль</a>
