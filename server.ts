@@ -1095,6 +1095,12 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     const distPath = path.join(__dirname, 'dist');
+    // Явно указываем путь для ассетов с разрешением CORS
+    app.use('/assets', express.static(path.join(distPath, 'assets'), {
+      setHeaders: (res) => {
+        res.set('Access-Control-Allow-Origin', '*');
+      }
+    }));
     app.use(express.static(distPath));
     app.get('*', (req, res) => res.sendFile(path.join(distPath, 'index.html')));
   }
