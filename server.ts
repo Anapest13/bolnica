@@ -93,18 +93,33 @@ function renderStatusPage(title: string, message: string, isSuccess: boolean) {
 }
 
 async function checkEmailDomain(email: string): Promise<boolean> {
-  const domain = email.split('@')[1];
+  const domain = email.split('@')[1]?.toLowerCase();
   if (!domain) return false;
+
+  // List of common disposable or obviously fake domains to block immediately
+  const blockedDomains = [
+    'test.com', 'test.ru', 'example.com', 'mailinator.com', 'tempmail.com', 
+    '123.com', 'qwerty.ru', 'abc.ru', 'temp-mail.org', 'fake.com'
+  ];
+  
+  if (blockedDomains.includes(domain)) return false;
+
+  // Basic email regex check server-side
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  if (!emailRegex.test(email)) return false;
+
   try {
+    console.log(`Checking MX records for domain: ${domain}`);
     const mx = await resolveMx(domain);
     return mx && mx.length > 0;
   } catch (e) {
-    // If MX check fails, fallback to A record check as some domains use A records for mail
+    console.log(`MX check failed for ${domain}, checking A records...`);
     try {
       const resolve4 = promisify(dns.resolve4);
       const addresses = await resolve4(domain);
       return addresses && addresses.length > 0;
     } catch (e2) {
+      console.log(`DNS check totally failed for ${domain}`);
       return false;
     }
   }
@@ -125,14 +140,14 @@ const transporter = nodemailer.createTransport({
     user: process.env.YANDEX_USER,
     pass: process.env.YANDEX_PASS,
   },
-  family: 4, // Force IPv4 to avoid ENETUNREACH on some hosts
+  family: 4, 
   connectionTimeout: 20000,
   greetingTimeout: 20000,
   socketTimeout: 30000,
   tls: {
-    rejectUnauthorized: false // Helps with some proxy/firewall issues
+    rejectUnauthorized: false 
   }
-});
+} as any);
 
 // Verify SMTP connection on startup
 transporter.verify((error, success) => {
