@@ -116,9 +116,10 @@ export default function App() {
       const response = await openai.chat.completions.create({
         model: 'deepseek-chat',
         messages: [
+          { role: 'system', content: 'Ты - ИИ-помощник ГБУЗ РТ "Дзун-Хемчикский ММЦ". Твоя задача - давать короткие и полезные советы по здоровью.' },
           { role: 'user', content: 'Дай один короткий и полезный совет по здоровью на сегодня (на русском языке). Максимум 2 предложения.' }
         ],
-        max_tokens: 100,
+        max_tokens: 150,
       });
       
       const tip = response.choices[0]?.message?.content || 'Пейте больше воды и будьте здоровы!';
