@@ -47,23 +47,27 @@ export default function AdminDashboard({ onDataUpdate }: AdminDashboardProps) {
       const [s, apts, docs, pts, specs, newsData] = await Promise.all([
         api.admin.getStats().catch(e => {
           console.error('Stats error:', e);
+          if (e.response?.status === 403) toast.error('Доступ к статистике ограничен');
           return { appointments: 0, patients: 0, doctors: 0, completed: 0 };
         }),
         api.admin.getAppointments().catch(e => {
           console.error('Appointments error:', e);
+          if (e.response?.status === 403) toast.error('Доступ к записям ограничен');
           return [];
         }),
         api.admin.getDoctors().catch(e => {
           console.error('Doctors error:', e);
+          if (e.response?.status === 403) toast.error('Доступ к списку врачей ограничен');
           return [];
         }),
         api.admin.getPatients().catch(e => {
           console.error('Patients error:', e);
-          if (e.response) {
+          if (e.response?.status === 403) {
+            toast.error('Доступ к списку пациентов ограничен');
+          } else if (e.response) {
             console.error('Response data:', e.response.data);
             console.error('Response status:', e.response.status);
           }
-          toast.error('Ошибка загрузки списка пациентов');
           return [];
         }),
         api.getSpecialties().catch(e => {

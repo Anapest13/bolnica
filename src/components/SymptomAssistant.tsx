@@ -223,8 +223,8 @@ export default function SymptomAssistant({ doctors, onSelectDoctor, user }: Symp
   };
 
   return (
-    <div className="max-w-5xl mx-auto py-6 md:py-12 px-2 md:px-4 h-[calc(100vh-140px)] md:h-[800px] flex flex-col lg:flex-row gap-4 md:gap-8">
-      {/* Sidebar Info - Hidden on mobile, shown in a toggle or at bottom */}
+    <div className="max-w-5xl mx-auto pt-2 md:pt-12 pb-2 px-2 md:px-4 h-[calc(100dvh-80px)] md:h-[850px] flex flex-col lg:flex-row gap-4 md:gap-8 overflow-hidden">
+      {/* Sidebar Info - Hidden on mobile */}
       <div className="hidden lg:flex lg:w-80 flex-col gap-6">
         <div className="bg-slate-900 p-8 rounded-[2.5rem] text-white shadow-2xl relative overflow-hidden">
           <div className="absolute top-0 right-0 p-6 opacity-10">
@@ -249,7 +249,7 @@ export default function SymptomAssistant({ doctors, onSelectDoctor, user }: Symp
           <p className="text-slate-500 text-xs font-bold leading-relaxed">
             Ваши данные конфиденциальны. ИИ помогает направить вас к нужному врачу, но не заменяет очную консультацию специалиста.
           </p>
-            <div className="pt-6 border-t border-slate-50">
+          <div className="pt-6 border-t border-slate-50">
             <div className="flex items-center gap-2 text-slate-400 mb-2">
               <Info className="w-4 h-4" />
               <span className="text-[10px] font-black uppercase tracking-widest">Статус системы</span>
@@ -269,52 +269,59 @@ export default function SymptomAssistant({ doctors, onSelectDoctor, user }: Symp
       </div>
 
       {/* Chat Area */}
-      <div className="flex-1 flex flex-col bg-white rounded-[3rem] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.1)] border border-slate-100 overflow-hidden">
+      <div className="flex-1 flex flex-col bg-white rounded-2xl md:rounded-[3rem] shadow-2xl border border-slate-100 overflow-hidden relative">
         {/* Chat Header */}
-        <div className="p-8 border-b border-slate-50 flex items-center justify-between bg-slate-50/30">
-          <div className="flex items-center gap-4">
+        <div className="px-4 md:px-8 py-3 md:py-6 border-b border-slate-50 flex items-center justify-between bg-slate-50/30 shrink-0">
+          <div className="flex items-center gap-3 md:gap-4">
             <div className="relative">
-              <div className="w-14 h-14 bg-slate-900 rounded-2xl flex items-center justify-center shadow-xl">
-                <Bot className="w-8 h-8 text-teal-400" />
+              <div className="w-9 h-9 md:w-14 md:h-14 bg-slate-900 rounded-lg md:rounded-2xl flex items-center justify-center shadow-xl">
+                <Bot className="w-5 h-5 md:w-8 md:h-8 text-teal-400" />
               </div>
-              <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-4 border-white" />
+              <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 md:w-4 md:h-4 bg-green-500 rounded-full border-2 border-white" />
             </div>
             <div>
-              <h3 className="text-lg md:text-xl font-black text-slate-900 tracking-tight">ИИ-Ассистент ММЦ</h3>
-              <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest">AI Diagnostics Support</p>
+              <h3 className="text-sm md:text-xl font-black text-slate-900 tracking-tight">ИИ-Ассистент</h3>
+              <p className="text-[7px] md:text-[10px] font-black text-teal-600 uppercase tracking-widest">AI Diagnostics Support</p>
             </div>
           </div>
+          <button 
+            onClick={clearHistory}
+            className="lg:hidden p-2 text-slate-400 hover:text-red-500 transition-colors"
+            title="Очистить историю"
+          >
+            <Trash2 className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Messages */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 md:p-8 space-y-6 md:space-y-8 scroll-smooth">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto p-3 md:p-8 space-y-4 md:space-y-8 scroll-smooth no-scrollbar">
           <AnimatePresence initial={false}>
             {messages.map((msg, i) => (
               <motion.div
                 key={i}
-                initial={{ opacity: 0, y: 20, scale: 0.95 }}
+                initial={{ opacity: 0, y: 10, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                <div className={`max-w-[95%] md:max-w-[85%] flex gap-3 md:gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
-                  <div className={`w-8 h-8 md:w-10 md:h-10 rounded-xl flex items-center justify-center shrink-0 shadow-lg ${
+                <div className={`max-w-[85%] md:max-w-[80%] flex gap-2 md:gap-4 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}>
+                  <div className={`w-7 h-7 md:w-10 md:h-10 rounded-lg md:rounded-xl flex items-center justify-center shrink-0 shadow-lg ${
                     msg.role === 'user' ? 'bg-teal-600 text-white' : 'bg-slate-900 text-teal-400'
                   }`}>
-                    {msg.role === 'user' ? <User className="w-4 h-4 md:w-5 md:h-5" /> : <Bot className="w-4 h-4 md:w-5 md:h-5" />}
+                    {msg.role === 'user' ? <User className="w-3.5 h-3.5 md:w-5 md:h-5" /> : <Bot className="w-3.5 h-3.5 md:w-5 md:h-5" />}
                   </div>
-                  <div className="space-y-4">
-                    <div className={`p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] shadow-xl ${
+                  <div className="space-y-2 md:space-y-3">
+                    <div className={`p-3 md:p-6 rounded-[1rem] md:rounded-[2rem] shadow-lg ${
                       msg.role === 'user' 
-                        ? 'bg-teal-600 text-white rounded-tr-none shadow-teal-100' 
+                        ? 'bg-teal-600 text-white rounded-tr-none' 
                         : 'bg-white text-slate-700 border border-slate-50 rounded-tl-none shadow-slate-100'
                     }`}>
-                      <p className="text-sm md:text-base font-medium leading-relaxed whitespace-pre-wrap">{msg.content}</p>
+                      <p className="text-xs md:text-base font-medium leading-relaxed whitespace-pre-wrap">{msg.content}</p>
                       {msg.role === 'assistant' && lastFailedMessage && i === messages.length - 1 && (
                         <button 
                           onClick={() => handleSend(lastFailedMessage)}
-                          className="mt-4 flex items-center gap-2 text-[10px] font-black text-teal-600 uppercase tracking-widest hover:text-teal-700 transition-colors"
+                          className="mt-3 flex items-center gap-2 text-[8px] md:text-[10px] font-black text-teal-600 uppercase tracking-widest"
                         >
-                          <Sparkles className="w-3 h-3" />
+                          <Sparkles className="w-2.5 h-2.5" />
                           Попробовать снова
                         </button>
                       )}
@@ -324,26 +331,25 @@ export default function SymptomAssistant({ doctors, onSelectDoctor, user }: Symp
                       <motion.div 
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        whileHover={{ y: -5 }}
-                        className="bg-slate-900 p-4 md:p-6 rounded-[1.8rem] md:rounded-[2rem] text-white shadow-2xl flex items-center gap-4 md:gap-6 group"
+                        className="bg-slate-900 p-3 md:p-6 rounded-[1.2rem] md:rounded-[2rem] text-white shadow-2xl flex items-center gap-3 md:gap-6 group"
                       >
                         <img 
                           src={msg.recommendation.photo} 
                           alt={msg.recommendation.name} 
-                          className="w-12 h-12 md:w-16 md:h-16 rounded-xl md:rounded-2xl object-cover shadow-lg border-2 border-white/10"
+                          className="w-9 h-9 md:w-16 md:h-16 rounded-lg md:rounded-2xl object-cover shadow-lg border-2 border-white/10"
                           referrerPolicy="no-referrer"
                         />
                         <div className="flex-1 min-w-0">
-                          <p className="text-[8px] md:text-[10px] font-black text-teal-400 uppercase tracking-widest mb-1 truncate">{msg.recommendation.specialty}</p>
-                          <p className="text-sm md:text-lg font-black tracking-tight truncate">{msg.recommendation.name}</p>
+                          <p className="text-[6px] md:text-[10px] font-black text-teal-400 uppercase tracking-widest mb-0.5 truncate">{msg.recommendation.specialty}</p>
+                          <p className="text-[10px] md:text-lg font-black tracking-tight truncate">{msg.recommendation.name}</p>
                         </div>
                         <motion.button 
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
                           onClick={() => onSelectDoctor(msg.recommendation!)}
-                          className="p-3 md:p-4 bg-teal-600 text-white rounded-xl md:rounded-2xl hover:bg-teal-500 transition-all shadow-xl shadow-teal-900/40"
+                          className="p-1.5 md:p-4 bg-teal-600 text-white rounded-lg md:rounded-2xl hover:bg-teal-500 transition-all shadow-xl shadow-teal-900/40"
                         >
-                          <ArrowRight className="w-5 h-5 md:w-6 md:h-6" />
+                          <ArrowRight className="w-3.5 h-3.5 md:w-6 md:h-6" />
                         </motion.button>
                       </motion.div>
                     )}
@@ -354,38 +360,30 @@ export default function SymptomAssistant({ doctors, onSelectDoctor, user }: Symp
           </AnimatePresence>
           {isLoading && (
             <motion.div 
-              initial={{ opacity: 0, x: -20 }}
+              initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               className="flex justify-start"
             >
-              <div className="bg-white p-4 md:p-6 rounded-[1.5rem] md:rounded-[2rem] shadow-xl border border-slate-50 flex items-center gap-3 md:gap-4">
-                <div className="relative">
-                  <Loader2 className="w-5 h-5 md:w-6 md:h-6 animate-spin text-teal-600" />
-                  <div className="absolute inset-0 blur-md bg-teal-400/20 animate-pulse" />
-                </div>
-                <span className="text-[10px] md:text-sm font-black text-slate-500 uppercase tracking-widest">Анализ симптомов...</span>
+              <div className="bg-white p-2.5 md:p-6 rounded-[1rem] md:rounded-[2rem] shadow-md border border-slate-50 flex items-center gap-2 md:gap-4">
+                <Loader2 className="w-3.5 h-3.5 md:w-6 md:h-6 animate-spin text-teal-600" />
+                <span className="text-[8px] md:text-sm font-black text-slate-500 uppercase tracking-widest">Анализирую...</span>
               </div>
             </motion.div>
           )}
         </div>
 
         {/* Input Area */}
-        <div className="p-4 md:p-8 bg-slate-50/50 border-t border-slate-100">
+        <div className="p-3 md:p-8 bg-slate-50/50 border-t border-slate-100 shrink-0">
           {messages.length === 1 && !isLoading && (
-            <div className="mb-4 md:mb-8 flex flex-wrap gap-2 md:gap-3 justify-center">
+            <div className="mb-3 overflow-x-auto pb-1 flex gap-2 no-scrollbar">
               {quickQuestions.map((q, i) => (
-                <motion.button
+                <button
                   key={i}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.95 }}
                   onClick={() => handleSend(q)}
-                  className="px-4 md:px-6 py-2 md:py-3 bg-white border border-slate-100 rounded-xl md:rounded-2xl text-[10px] md:text-xs font-black text-slate-600 hover:border-teal-500 hover:text-teal-600 transition-all shadow-sm"
+                  className="px-3 py-1.5 bg-white border border-slate-100 rounded-lg text-[9px] whitespace-nowrap font-black text-slate-600 hover:border-teal-500 hover:text-teal-600 transition-all shadow-sm shrink-0"
                 >
                   {q}
-                </motion.button>
+                </button>
               ))}
             </div>
           )}
@@ -395,22 +393,22 @@ export default function SymptomAssistant({ doctors, onSelectDoctor, user }: Symp
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={(e) => e.key === 'Enter' && handleSend()}
-              placeholder={window.innerWidth < 768 ? "Опишите жалобы..." : "Опишите ваши симптомы..."}
-              className="w-full pl-6 md:pl-8 pr-16 md:pr-20 py-4 md:py-6 bg-white border-2 border-transparent focus:border-teal-500 rounded-[1.5rem] md:rounded-[2rem] shadow-2xl outline-none transition-all font-bold text-sm md:text-base text-slate-900 placeholder:text-slate-300"
+              placeholder="Опишите ваши симптомы..."
+              className="w-full pl-4 md:pl-8 pr-12 md:pr-20 py-3 md:py-6 bg-white border-2 border-transparent focus:border-teal-500 rounded-xl md:rounded-[2rem] shadow-xl outline-none transition-all font-bold text-xs md:text-base text-slate-900 placeholder:text-slate-300"
             />
             <motion.button 
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={handleSend}
+              onClick={() => handleSend()}
               disabled={!input.trim() || isLoading}
-              className="absolute right-2 md:right-3 p-3 md:p-4 bg-slate-900 text-white rounded-xl md:rounded-2xl hover:bg-teal-600 disabled:opacity-50 transition-all shadow-xl"
+              className="absolute right-1.5 md:right-3 p-2 md:p-4 bg-slate-900 text-white rounded-lg md:rounded-2xl hover:bg-teal-600 disabled:opacity-50 transition-all shadow-xl"
             >
-              <Send className="w-5 h-5 md:w-6 md:h-6" />
+              <Send className="w-4 h-4 md:w-6 md:h-6" />
             </motion.button>
           </div>
-          <div className="mt-4 flex flex-wrap items-center justify-center gap-3 md:gap-6 text-[8px] md:text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">
-            <span className="flex items-center gap-1"><ShieldCheck className="w-3 h-3" /> Конфиденциально</span>
-            <span className="flex items-center gap-1"><Info className="w-3 h-3" /> Не диагноз</span>
+          <div className="mt-2.5 md:mt-4 flex items-center justify-center gap-4 md:gap-6 text-[6px] md:text-[10px] font-black text-slate-400 uppercase tracking-widest">
+            <span className="flex items-center gap-1"><ShieldCheck className="w-2.5 h-2.5" /> Конфиденциально</span>
+            <span className="flex items-center gap-1"><Info className="w-2.5 h-2.5" /> Не диагноз</span>
           </div>
         </div>
       </div>

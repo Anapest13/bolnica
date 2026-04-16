@@ -483,8 +483,8 @@ async function startServer() {
 
       // Determine App URL
       let appUrl = process.env.APP_URL;
-      if (!appUrl || appUrl === 'MY_APP_URL' || appUrl === 'http://localhost:3000') {
-        const protocol = req.protocol;
+      if (!appUrl || appUrl === 'MY_APP_URL' || appUrl === 'http://localhost:3000' || appUrl === 'https://bolnica.tuva.ru') {
+        const protocol = req.headers['x-forwarded-proto'] || req.protocol;
         const host = req.get('host');
         appUrl = `${protocol}://${host}`;
       }
@@ -539,8 +539,8 @@ async function startServer() {
 
       // Determine App URL
       let appUrl = process.env.APP_URL;
-      if (!appUrl || appUrl === 'MY_APP_URL' || appUrl === 'http://localhost:3000') {
-        const protocol = req.protocol;
+      if (!appUrl || appUrl === 'MY_APP_URL' || appUrl === 'http://localhost:3000' || appUrl === 'https://bolnica.tuva.ru') {
+        const protocol = req.headers['x-forwarded-proto'] || req.protocol;
         const host = req.get('host');
         appUrl = `${protocol}://${host}`;
       }
@@ -571,7 +571,13 @@ async function startServer() {
   });
 
   app.get('/api/auth/verify-email', async (req, res) => {
-    const { token } = req.query;
+    let { token } = req.query;
+    if (typeof token !== 'string') {
+      return res.status(400).send(renderStatusPage('Ошибка', 'Некорректный запрос.', false));
+    }
+
+    token = token.trim();
+
     try {
       const [rows]: any = await pool.query('SELECT * FROM patients WHERE verification_token = ?', [token]);
       if (rows.length === 0) {
@@ -618,8 +624,8 @@ async function startServer() {
       
       // Determine App URL
       let appUrl = process.env.APP_URL;
-      if (!appUrl || appUrl === 'MY_APP_URL' || appUrl === 'http://localhost:3000') {
-        const protocol = req.protocol;
+      if (!appUrl || appUrl === 'MY_APP_URL' || appUrl === 'http://localhost:3000' || appUrl === 'https://bolnica.tuva.ru') {
+        const protocol = req.headers['x-forwarded-proto'] || req.protocol;
         const host = req.get('host');
         appUrl = `${protocol}://${host}`;
       }
@@ -848,9 +854,9 @@ async function startServer() {
       const [rows] = await pool.query(`
         SELECT a.*, DATE_FORMAT(a.date, "%Y-%m-%d") as date, TIME_FORMAT(a.time, "%H:%i") as time, d.name as doctorName, p.name as patientName, p.email as patientEmail, p.phone as patientPhone, s.name as specialty
         FROM appointments a
-        JOIN doctors d ON a.doctor_id = d.id
-        JOIN patients p ON a.patient_id = p.id
-        JOIN specialties s ON d.specialty_id = s.id
+        LEFT JOIN doctors d ON a.doctor_id = d.id
+        LEFT JOIN patients p ON a.patient_id = p.id
+        LEFT JOIN specialties s ON d.specialty_id = s.id
         ORDER BY a.date DESC, a.time DESC
       `);
       res.json(rows);
@@ -923,11 +929,11 @@ async function startServer() {
       const [avgRating]: any = await pool.query('SELECT COALESCE(AVG(rating), 0) as avg FROM doctors');
       
       const [topSpecialties]: any = await pool.query(`
-        SELECT COALESCE(s.name, 'Без категории') as name, COUNT(a.id) as count 
+        SELECT COALESCE(s.name, 'Общий профиль') as name, COUNT(a.id) as count 
         FROM appointments a 
         JOIN doctors d ON a.doctor_id = d.id 
         LEFT JOIN specialties s ON d.specialty_id = s.id 
-        GROUP BY s.name 
+        GROUP BY COALESCE(s.name, 'Общий профиль')
         ORDER BY count DESC 
         LIMIT 3
       `);
@@ -953,7 +959,7 @@ async function startServer() {
       const [rows] = await pool.query(`
         SELECT d.*, s.name as specialtyName 
         FROM doctors d 
-        JOIN specialties s ON d.specialty_id = s.id
+        LEFT JOIN specialties s ON d.specialty_id = s.id
       `);
       res.json(rows);
     } catch (e) {

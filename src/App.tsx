@@ -787,7 +787,7 @@ export default function App() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="py-12"
+                className="h-[calc(100vh-80px)]"
               >
                 <SymptomAssistant 
                   key={user ? `user-${user.id}` : 'guest'}
