@@ -479,10 +479,11 @@ async function startServer() {
       const hashedPassword = bcrypt.hashSync(password, 10);
       const verificationToken = crypto.randomBytes(32).toString('hex');
       
-      await pool.query(
+      const [result]: any = await pool.query(
         'INSERT INTO patients (name, email, password, phone, verification_token, is_verified) VALUES (?, ?, ?, ?, ?, ?)',
         [name, email, hashedPassword, phone, verificationToken, false]
       );
+      const patientId = result.insertId;
 
       // Determine App URL
       let appUrl = process.env.APP_URL;
@@ -495,7 +496,7 @@ async function startServer() {
       const verificationLink = `${appUrl}/api/auth/verify-email?token=${verificationToken}`;
 
       try {
-        console.log(`Attempting to send verification email to: ${email} using ${process.env.YANDEX_USER}. Link: ${verificationLink}`);
+        console.log(`Attempting to send verification email to: ${email}`);
         await transporter.sendMail({
           from: `"ГБУЗ РТ Дзун-Хемчикский ММЦ" <${process.env.YANDEX_USER}>`,
           to: email,
@@ -512,11 +513,10 @@ async function startServer() {
         });
         res.json({ message: 'На вашу почту отправлено письмо для подтверждения регистрации' });
       } catch (mailError) {
-        console.error('Mail Error:', mailError);
-        res.status(500).json({ 
-          error: 'Аккаунт создан, но не удалось отправить письмо с подтверждением. Пожалуйста, проверьте настройки YANDEX_USER и YANDEX_PASS.',
-          details: 'Mail delivery failed'
-        });
+        console.error('Mail Delivery Failed:', mailError);
+        // Clean up user record so they can try again with a correct/working email
+        await pool.query('DELETE FROM patients WHERE id = ?', [patientId]);
+        res.status(400).json({ error: 'На указанный email письмо не может быть отправлено. Пожалуйста, убедитесь, что адрес существует и попробуйте снова.' });
       }
     } catch (e) {
       console.error('Registration Error:', e);

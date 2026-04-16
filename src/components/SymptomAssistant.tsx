@@ -271,11 +271,11 @@ export default function SymptomAssistant({ doctors, onSelectDoctor, user }: Symp
       {/* Chat Area */}
       <div className="flex-1 flex flex-col bg-white md:rounded-[3rem] shadow-2xl border-x md:border border-slate-100 overflow-hidden relative">
         {/* Chat Header */}
-        <div className="px-4 md:px-8 py-3 md:py-6 border-b border-slate-50 flex items-center justify-between bg-slate-50/30 shrink-0">
-          <div className="flex items-center gap-3 md:gap-4">
+        <div className="px-3 md:px-8 py-2 md:py-6 border-b border-slate-50 flex items-center justify-between bg-slate-50/30 shrink-0">
+          <div className="flex items-center gap-2 md:gap-4">
             <div className="relative">
-              <div className="w-9 h-9 md:w-14 md:h-14 bg-slate-900 rounded-lg md:rounded-2xl flex items-center justify-center shadow-xl">
-                <Bot className="w-5 h-5 md:w-8 md:h-8 text-teal-400" />
+              <div className="w-8 h-8 md:w-14 md:h-14 bg-slate-900 rounded-lg md:rounded-2xl flex items-center justify-center shadow-xl">
+                <Bot className="w-4 h-4 md:w-8 md:h-8 text-teal-400" />
               </div>
               <div className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 md:w-4 md:h-4 bg-green-500 rounded-full border-2 border-white" />
             </div>
@@ -377,9 +377,9 @@ export default function SymptomAssistant({ doctors, onSelectDoctor, user }: Symp
         </div>
 
         {/* Input Area */}
-        <div className="p-3 md:p-8 bg-slate-50/50 border-t border-slate-100 shrink-0">
+        <div className="p-2 md:p-8 bg-slate-50/50 border-t border-slate-100 shrink-0">
           {messages.length === 1 && !isLoading && (
-            <div className="mb-3 overflow-x-auto pb-1 flex gap-2 no-scrollbar">
+            <div className="mb-2 overflow-x-auto pb-1 flex gap-2 no-scrollbar">
               {quickQuestions.map((q, i) => (
                 <button
                   key={i}
