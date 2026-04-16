@@ -142,15 +142,18 @@ export default function SymptomAssistant({ doctors, onSelectDoctor, user }: Symp
       });
 
       const textResponse = response.choices[0]?.message?.content || 'Извините, я не смог обработать ваш запрос. Попробуйте перефразировать.';
-      const recommendationMatch = textResponse.match(/\[RECOMMEND: (.*?)\]/);
+      const recommendationMatch = textResponse.match(/\[RECOMMEND:?\s*(.*?)\]/i);
       let recommendedDoctor: Doctor | undefined;
 
       if (recommendationMatch) {
-        const doctorName = recommendationMatch[1].trim();
-        recommendedDoctor = doctors.find(d => d.name.toLowerCase().includes(doctorName.toLowerCase()) || doctorName.toLowerCase().includes(d.name.toLowerCase()));
+        const doctorName = recommendationMatch[1].replace(/[.!?]$/, '').trim().toLowerCase();
+        recommendedDoctor = doctors.find(d => {
+          const dName = d.name.toLowerCase();
+          return dName.includes(doctorName) || doctorName.includes(dName);
+        });
       }
 
-      const cleanText = textResponse.replace(/\[RECOMMEND: .*?\]/, '').trim();
+      const cleanText = textResponse.replace(/\[RECOMMEND:?\s*.*?\]/i, '').trim();
       setMessages(prev => [...prev, { 
         role: 'assistant', 
         content: cleanText,
