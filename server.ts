@@ -1096,7 +1096,10 @@ async function startServer() {
   // Vite integration
   app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
+  console.log(`[SERVER] NODE_ENV is: ${process.env.NODE_ENV}`);
+
   if (process.env.NODE_ENV !== 'production') {
+    console.log('[SERVER] Starting in DEVELOPMENT mode (Vite middleware)');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
