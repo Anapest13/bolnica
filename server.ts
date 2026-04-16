@@ -1092,15 +1092,16 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.join(__dirname, 'dist');
-    // Явно указываем путь для ассетов с разрешением CORS
-    app.use('/assets', express.static(path.join(distPath, 'assets'), {
-      setHeaders: (res) => {
-        res.set('Access-Control-Allow-Origin', '*');
-      }
-    }));
+    const distPath = path.resolve(__dirname, 'dist');
+    console.log('Serving static files from:', distPath);
+    
+    // Отдаем статику (скрипты, стили)
     app.use(express.static(distPath));
-    app.get('*', (req, res) => res.sendFile(path.join(distPath, 'index.html')));
+    
+    // Все остальные запросы направляем на index.html (для работы SPA)
+    app.get('*', (req, res) => {
+      res.sendFile(path.resolve(distPath, 'index.html'));
+    });
   }
 
   app.listen(3000, '0.0.0.0', () => {
