@@ -60,17 +60,17 @@ export default function App() {
 
     // Handle reset password token from URL
     const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    if (window.location.pathname === '/reset-password' && token) {
-      setResetToken(token);
+    const verifyToken = urlParams.get('verify') || (window.location.pathname === '/verify-email' ? urlParams.get('token') : null);
+    const resetTokenFromUrl = urlParams.get('reset') || (window.location.pathname === '/reset-password' ? urlParams.get('token') : null);
+
+    if (resetTokenFromUrl) {
+      setResetToken(resetTokenFromUrl);
       setShowAuthModal('reset-password');
-      // Clean up URL
       window.history.replaceState({}, document.title, "/");
     }
 
-    // Handle verify email token from URL
-    if (window.location.pathname === '/verify-email' && token) {
-      api.verifyEmail(token)
+    if (verifyToken) {
+      api.verifyEmail(verifyToken)
         .then(() => {
           toast.success('Email успешно подтвержден! Теперь вы можете войти.');
           setShowAuthModal('login');

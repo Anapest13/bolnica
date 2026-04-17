@@ -526,10 +526,10 @@ async function startServer() {
         appUrl = `${protocol}://${host}`;
       }
 
-      const verificationLink = `${appUrl}/verify-email?token=${verificationToken}`;
+      const verificationLink = `${appUrl}/?verify=${verificationToken}`;
 
       try {
-        console.log(`Attempting to send verification email to: ${email}`);
+        console.log(`[AUTH] Sending verification email to ${email}. Link: ${verificationLink}`);
         const mailInfo = await transporter.sendMail({
           from: `"ГБУЗ РТ Дзун-Хемчикский ММЦ" <${process.env.YANDEX_USER}>`,
           to: email,
@@ -592,9 +592,9 @@ async function startServer() {
         appUrl = `${protocol}://${host}`;
       }
 
-      const verificationLink = `${appUrl}/verify-email?token=${verificationToken}`;
+      const verificationLink = `${appUrl}/?verify=${verificationToken}`;
 
-      console.log(`Attempting to resend verification email to: ${email} using ${process.env.YANDEX_USER}. Link: ${verificationLink}`);
+      console.log(`[AUTH] Resending verification email to: ${email}. Link: ${verificationLink}`);
       try {
         const mailInfo = await transporter.sendMail({
           from: `"ГБУЗ РТ Дзун-Хемчикский ММЦ" <${process.env.YANDEX_USER}>`,
@@ -691,9 +691,9 @@ async function startServer() {
         appUrl = `${protocol}://${host}`;
       }
 
-      const resetLink = `${appUrl}/reset-password?token=${resetToken}`;
+      const resetLink = `${appUrl}/?reset=${resetToken}`;
 
-      console.log(`Attempting to send reset password email to: ${email} using ${process.env.YANDEX_USER}. Link: ${resetLink}`);
+      console.log(`[AUTH] Sending reset password email to: ${email}. Link: ${resetLink}`);
       try {
         const mailInfo = await transporter.sendMail({
           from: `"ГБУЗ РТ Дзун-Хемчикский ММЦ" <${process.env.YANDEX_USER}>`,
