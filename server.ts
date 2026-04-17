@@ -93,35 +93,53 @@ function renderStatusPage(title: string, message: string, isSuccess: boolean) {
 }
 
 async function checkEmailDomain(email: string): Promise<boolean> {
-  const domain = email.split('@')[1]?.toLowerCase();
-  if (!domain) return false;
-
-  // List of common disposable or obviously fake domains to block immediately
-  const blockedDomains = [
-    'test.com', 'test.ru', 'example.com', 'mailinator.com', 'tempmail.com', 
-    '123.com', 'qwerty.ru', 'abc.ru', 'temp-mail.org', 'fake.com'
-  ];
+  const parts = email.split('@');
+  if (parts.length !== 2) return false;
   
-  if (blockedDomains.includes(domain)) return false;
+  const localPart = parts[0];
+  const domain = parts[1].toLowerCase();
+  
+  if (!localPart || !domain) return false;
 
-  // Basic email regex check server-side
-  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  // List of common disposable, obviously fake, or parked domains to block immediately
+  const blockedDomains = new Set([
+    'test.com', 'test.ru', 'example.com', 'mailinator.com', 'tempmail.com', 
+    '123.com', 'qwerty.ru', 'abc.ru', 'temp-mail.org', 'fake.com',
+    'domain.com', 'email.com', 'google.ru', 'site.ru', '123.ru',
+    'bugmenot.com', 'guerrillamail.com', 'getairmail.com', 'dispostable.com',
+    '10minutemail.com', 'trashmail.com', 'maildrop.cc', 'yopmail.com',
+    'asdf.ru', 'asdf.com', 'test.mail', 'none.com', 'no.mail'
+  ]);
+  
+  if (blockedDomains.has(domain)) return false;
+  
+  // Block obvious trash local parts
+  const trashLocalParts = ['test', 'asdf', 'qwerty', '12345', '123456', 'admin', 'root', 'user', 'none'];
+  if (trashLocalParts.includes(localPart.toLowerCase())) return false;
+  
+  // Repetitive character check (e.g., aaaaaa@...)
+  if (/^(.)\1{5,}$/.test(localPart)) return false;
+
+  // Protect against domains that are too short to be real mail providers
+  if (domain.split('.')[0].length < 2) return false;
+
+  // Basic email regex check server-side (Fixed dots)
+  const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,15}$/;
   if (!emailRegex.test(email)) return false;
 
   try {
     console.log(`Checking MX records for domain: ${domain}`);
     const mx = await resolveMx(domain);
-    return mx && mx.length > 0;
-  } catch (e) {
-    console.log(`MX check failed for ${domain}, checking A records...`);
-    try {
-      const resolve4 = promisify(dns.resolve4);
-      const addresses = await resolve4(domain);
-      return addresses && addresses.length > 0;
-    } catch (e2) {
-      console.log(`DNS check totally failed for ${domain}`);
+    // Real mail servers MUST have MX records. Deny domains without MX records 
+    // to block fake and parked domains more effectively.
+    if (!mx || mx.length === 0) {
+      console.log(`No MX records for ${domain}`);
       return false;
     }
+    return true;
+  } catch (e) {
+    console.log(`MX check failed for ${domain}. Denying registration for security.`);
+    return false;
   }
 }
 
@@ -508,11 +526,11 @@ async function startServer() {
         appUrl = `${protocol}://${host}`;
       }
 
-      const verificationLink = `${appUrl}/api/auth/verify-email?token=${verificationToken}`;
+      const verificationLink = `${appUrl}/verify-email?token=${verificationToken}`;
 
       try {
         console.log(`Attempting to send verification email to: ${email}`);
-        await transporter.sendMail({
+        const mailInfo = await transporter.sendMail({
           from: `"ГБУЗ РТ Дзун-Хемчикский ММЦ" <${process.env.YANDEX_USER}>`,
           to: email,
           subject: 'Подтверждение регистрации',
@@ -526,12 +544,23 @@ async function startServer() {
             </div>
           `,
         });
+
+        if (mailInfo.rejected && mailInfo.rejected.length > 0) {
+          throw new Error('RECIPIENT_REJECTED');
+        }
+
         res.json({ message: 'На вашу почту отправлено письмо для подтверждения регистрации' });
-      } catch (mailError) {
+      } catch (mailError: any) {
         console.error('Mail Delivery Failed:', mailError);
         // Clean up user record so they can try again with a correct/working email
         await pool.query('DELETE FROM patients WHERE id = ?', [patientId]);
-        res.status(400).json({ error: 'На указанный email письмо не может быть отправлено. Пожалуйста, убедитесь, что адрес существует и попробуйте снова.' });
+        
+        let errorMsg = 'На указанный email письмо не может быть отправлено. Пожалуйста, убедитесь, что адрес существует и попробуйте снова.';
+        if (mailError.message === 'RECIPIENT_REJECTED' || (mailError.responseCode && mailError.responseCode >= 550)) {
+          errorMsg = 'Почтовый сервер отклонил адрес: такого почтового ящика не существует.';
+        }
+        
+        res.status(400).json({ error: errorMsg });
       }
     } catch (e) {
       console.error('Registration Error:', e);
@@ -563,27 +592,40 @@ async function startServer() {
         appUrl = `${protocol}://${host}`;
       }
 
-      const verificationLink = `${appUrl}/api/auth/verify-email?token=${verificationToken}`;
+      const verificationLink = `${appUrl}/verify-email?token=${verificationToken}`;
 
       console.log(`Attempting to resend verification email to: ${email} using ${process.env.YANDEX_USER}. Link: ${verificationLink}`);
-      await transporter.sendMail({
-        from: `"ГБУЗ РТ Дзун-Хемчикский ММЦ" <${process.env.YANDEX_USER}>`,
-        to: email,
-        subject: 'Подтверждение регистрации (повторно)',
-        html: `
-          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 16px;">
-            <h1 style="color: #0d9488;">Подтверждение регистрации</h1>
-            <p style="color: #475569; font-size: 16px;">Вы запросили повторную отправку ссылки для подтверждения email. Пожалуйста, нажмите на кнопку ниже:</p>
-            <a href="${verificationLink}" style="display: inline-block; background-color: #0d9488; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0;">Подтвердить Email</a>
-            <p style="color: #94a3b8; font-size: 12px;">Если кнопка не работает, скопируйте и вставьте эту ссылку в браузер:</p>
-            <p style="color: #94a3b8; font-size: 12px;">${verificationLink}</p>
-          </div>
-        `,
-      });
+      try {
+        const mailInfo = await transporter.sendMail({
+          from: `"ГБУЗ РТ Дзун-Хемчикский ММЦ" <${process.env.YANDEX_USER}>`,
+          to: email,
+          subject: 'Подтверждение регистрации (повторно)',
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 16px;">
+              <h1 style="color: #0d9488;">Подтверждение регистрации</h1>
+              <p style="color: #475569; font-size: 16px;">Вы запросили повторную отправку ссылки для подтверждения email. Пожалуйста, нажмите на кнопку ниже:</p>
+              <a href="${verificationLink}" style="display: inline-block; background-color: #0d9488; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0;">Подтвердить Email</a>
+              <p style="color: #94a3b8; font-size: 12px;">Если кнопка не работает, скопируйте и вставьте эту ссылку в браузер:</p>
+              <p style="color: #94a3b8; font-size: 12px;">${verificationLink}</p>
+            </div>
+          `,
+        });
 
-      res.json({ message: 'Письмо с подтверждением отправлено повторно' });
+        if (mailInfo.rejected && mailInfo.rejected.length > 0) {
+          throw new Error('RECIPIENT_REJECTED');
+        }
+
+        res.json({ message: 'Письмо с подтверждением отправлено повторно' });
+      } catch (mailError: any) {
+        console.error('Resend Verification Failed:', mailError);
+        let errorMsg = 'Ошибка при отправке письма. Пожалуйста, убедитесь, что адрес существует.';
+        if (mailError.message === 'RECIPIENT_REJECTED' || (mailError.responseCode && mailError.responseCode >= 550)) {
+          errorMsg = 'Почтовый сервер отклонил адрес: такого почтового ящика не существует.';
+        }
+        res.status(400).json({ error: errorMsg });
+      }
     } catch (e) {
-      console.error(e);
+      console.error('Resend Verification Outer Error:', e);
       res.status(500).json({ error: 'Ошибка при отправке письма' });
     }
   });
@@ -591,7 +633,7 @@ async function startServer() {
   app.get('/api/auth/verify-email', async (req, res) => {
     let { token } = req.query;
     if (typeof token !== 'string') {
-      return res.status(400).send(renderStatusPage('Ошибка', 'Некорректный запрос.', false));
+      return res.status(400).json({ error: 'Токен обязателен' });
     }
 
     token = token.trim();
@@ -599,13 +641,14 @@ async function startServer() {
     try {
       const [rows]: any = await pool.query('SELECT * FROM patients WHERE verification_token = ?', [token]);
       if (rows.length === 0) {
-        return res.status(400).send(renderStatusPage('Ошибка', 'Неверный или просроченный токен подтверждения.', false));
+        return res.status(400).json({ error: 'Неверный или просроченный токен подтверждения' });
       }
       
       await pool.query('UPDATE patients SET is_verified = true, verification_token = NULL WHERE id = ?', [rows[0].id]);
-      res.send(renderStatusPage('Успех!', 'Ваш email успешно подтвержден. Теперь вы можете войти в свой личный кабинет.', true));
+      res.json({ success: true, message: 'Ваш email успешно подтвержден' });
     } catch (e) {
-      res.status(500).send(renderStatusPage('Ошибка сервера', 'Произошла непредвиденная ошибка. Пожалуйста, попробуйте позже.', false));
+      console.error('Email verification error:', e);
+      res.status(500).json({ error: 'Произошла ошибка при подтверждении email' });
     }
   });
 
@@ -651,26 +694,39 @@ async function startServer() {
       const resetLink = `${appUrl}/reset-password?token=${resetToken}`;
 
       console.log(`Attempting to send reset password email to: ${email} using ${process.env.YANDEX_USER}. Link: ${resetLink}`);
-      await transporter.sendMail({
-        from: `"ГБУЗ РТ Дзун-Хемчикский ММЦ" <${process.env.YANDEX_USER}>`,
-        to: email,
-        subject: 'Восстановление пароля',
-        html: `
-          <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 16px;">
-            <h1 style="color: #0d9488;">Восстановление пароля</h1>
-            <p style="color: #475569; font-size: 16px;">Вы получили это письмо, потому что запросили восстановление пароля. Пожалуйста, нажмите на кнопку ниже для установки нового пароля:</p>
-            <a href="${resetLink}" style="display: inline-block; background-color: #0d9488; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0;">Сбросить пароль</a>
-            <p style="color: #94a3b8; font-size: 12px;">Ссылка действительна в течение 1 часа. Если вы не запрашивали сброс пароля, просто проигнорируйте это письмо.</p>
-            <p style="color: #94a3b8; font-size: 12px;">Если кнопка не работает, скопируйте и вставьте эту ссылку в браузер:</p>
-            <p style="color: #94a3b8; font-size: 12px;">${resetLink}</p>
-          </div>
-        `,
-      });
-      
-      res.json({ success: true, message: 'Инструкции по восстановлению отправлены на вашу почту' });
+      try {
+        const mailInfo = await transporter.sendMail({
+          from: `"ГБУЗ РТ Дзун-Хемчикский ММЦ" <${process.env.YANDEX_USER}>`,
+          to: email,
+          subject: 'Восстановление пароля',
+          html: `
+            <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 16px;">
+              <h1 style="color: #0d9488;">Восстановление пароля</h1>
+              <p style="color: #475569; font-size: 16px;">Вы получили это письмо, потому что запросили восстановление пароля. Пожалуйста, нажмите на кнопку ниже для установки нового пароля:</p>
+              <a href="${resetLink}" style="display: inline-block; background-color: #0d9488; color: white; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-weight: bold; margin: 20px 0;">Сбросить пароль</a>
+              <p style="color: #94a3b8; font-size: 12px;">Ссылка действительна в течение 1 часа. Если вы не запрашивали сброс пароля, просто проигнорируйте это письмо.</p>
+              <p style="color: #94a3b8; font-size: 12px;">Если кнопка не работает, скопируйте и вставьте эту ссылку в браузер:</p>
+              <p style="color: #94a3b8; font-size: 12px;">${resetLink}</p>
+            </div>
+          `,
+        });
+
+        if (mailInfo.rejected && mailInfo.rejected.length > 0) {
+          throw new Error('RECIPIENT_REJECTED');
+        }
+
+        res.json({ success: true, message: 'Инструкции по восстановлению отправлены на вашу почту' });
+      } catch (mailError: any) {
+        console.error('Reset Password Email Failed:', mailError);
+        let errorMsg = 'Ошибка при отправке письма. Пожалуйста, убедитесь, что адрес существует.';
+        if (mailError.message === 'RECIPIENT_REJECTED' || (mailError.responseCode && mailError.responseCode >= 550)) {
+          errorMsg = 'Почтовый сервер отклонил адрес: такого почтового ящика не существует.';
+        }
+        res.status(400).json({ error: errorMsg });
+      }
     } catch (e) {
-      console.error(e);
-      res.status(500).json({ error: 'Ошибка при отправке письма' });
+      console.error('Forgot Password Outer Error:', e);
+      res.status(500).json({ error: 'Ошибка при обработке запроса' });
     }
   });
 

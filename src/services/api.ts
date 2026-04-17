@@ -69,6 +69,10 @@ export const api = {
     const res = await axios.post(`${API_URL}/auth/forgot-password`, { email });
     return res.data;
   },
+  verifyEmail: async (token: string) => {
+    const res = await axios.get(`${API_URL}/auth/verify-email?token=${token}`);
+    return res.data;
+  },
   resetPassword: async (token: string, newPassword: string) => {
     const res = await axios.post(`${API_URL}/auth/reset-password`, { token, newPassword });
     return res.data;

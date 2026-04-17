@@ -67,6 +67,21 @@ export default function App() {
       // Clean up URL
       window.history.replaceState({}, document.title, "/");
     }
+
+    // Handle verify email token from URL
+    if (window.location.pathname === '/verify-email' && token) {
+      api.verifyEmail(token)
+        .then(() => {
+          toast.success('Email успешно подтвержден! Теперь вы можете войти.');
+          setShowAuthModal('login');
+        })
+        .catch((err) => {
+          toast.error(err.response?.data?.error || 'Ошибка подтверждения email');
+        })
+        .finally(() => {
+          window.history.replaceState({}, document.title, "/");
+        });
+    }
   }, []);
 
   useEffect(() => {
@@ -787,7 +802,7 @@ export default function App() {
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.95 }}
-                className="h-[calc(100dvh-80px)] overflow-hidden"
+                className="py-12"
               >
                 <SymptomAssistant 
                   key={user ? `user-${user.id}` : 'guest'}
