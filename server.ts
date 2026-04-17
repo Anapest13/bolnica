@@ -526,10 +526,10 @@ async function startServer() {
         appUrl = `${protocol}://${host}`;
       }
 
-      const verificationLink = `${appUrl}/?verify=${verificationToken}`;
+      const verificationLink = `${appUrl}/api/auth/verify-email?token=${verificationToken}`;
 
       try {
-        console.log(`[AUTH] Sending verification email to ${email}. Link: ${verificationLink}`);
+        console.log(`[AUTH] Registration: Sending verification link ${verificationLink} to ${email}`);
         const mailInfo = await transporter.sendMail({
           from: `"ГБУЗ РТ Дзун-Хемчикский ММЦ" <${process.env.YANDEX_USER}>`,
           to: email,
@@ -592,9 +592,9 @@ async function startServer() {
         appUrl = `${protocol}://${host}`;
       }
 
-      const verificationLink = `${appUrl}/?verify=${verificationToken}`;
+      const verificationLink = `${appUrl}/api/auth/verify-email?token=${verificationToken}`;
 
-      console.log(`[AUTH] Resending verification email to: ${email}. Link: ${verificationLink}`);
+      console.log(`[AUTH] Resending: Sending verification link ${verificationLink} to ${email}`);
       try {
         const mailInfo = await transporter.sendMail({
           from: `"ГБУЗ РТ Дзун-Хемчикский ММЦ" <${process.env.YANDEX_USER}>`,
@@ -632,23 +632,34 @@ async function startServer() {
 
   app.get('/api/auth/verify-email', async (req, res) => {
     let { token } = req.query;
+    console.log(`[AUTH] Verification attempt with token: "${token}"`);
+    
     if (typeof token !== 'string') {
-      return res.status(400).json({ error: 'Токен обязателен' });
+      console.warn('[AUTH] Verification failed: No token provided');
+      return res.redirect('/?verify_error=no_token');
     }
 
     token = token.trim();
 
     try {
-      const [rows]: any = await pool.query('SELECT * FROM patients WHERE verification_token = ?', [token]);
+      const [rows]: any = await pool.query('SELECT id, email, is_verified FROM patients WHERE verification_token = ?', [token]);
+      
       if (rows.length === 0) {
-        return res.status(400).json({ error: 'Неверный или просроченный токен подтверждения' });
+        console.warn(`[AUTH] Verification failed: Token "${token}" not found in database`);
+        return res.redirect('/?verify_error=invalid_token');
       }
       
-      await pool.query('UPDATE patients SET is_verified = true, verification_token = NULL WHERE id = ?', [rows[0].id]);
-      res.json({ success: true, message: 'Ваш email успешно подтвержден' });
+      const user = rows[0];
+      console.log(`[AUTH] Found user ${user.email} (ID: ${user.id}) for token. is_verified was: ${user.is_verified}`);
+
+      await pool.query('UPDATE patients SET is_verified = 1, verification_token = NULL WHERE id = ?', [user.id]);
+      console.log(`[AUTH] Success: User ${user.email} is now verified (is_verified = 1)`);
+      
+      // Redirect to frontend with success flag
+      res.redirect('/?verified=true');
     } catch (e) {
-      console.error('Email verification error:', e);
-      res.status(500).json({ error: 'Произошла ошибка при подтверждении email' });
+      console.error('[AUTH] Critical error during verification:', e);
+      res.redirect('/?verify_error=server_error');
     }
   });
 

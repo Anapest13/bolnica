@@ -62,6 +62,10 @@ export default function App() {
     const urlParams = new URLSearchParams(window.location.search);
     const verifyToken = urlParams.get('verify') || (window.location.pathname === '/verify-email' ? urlParams.get('token') : null);
     const resetTokenFromUrl = urlParams.get('reset') || (window.location.pathname === '/reset-password' ? urlParams.get('token') : null);
+    
+    // Server-side redirect flags
+    const isVerifiedSuccess = urlParams.get('verified') === 'true';
+    const verifyError = urlParams.get('verify_error');
 
     if (resetTokenFromUrl) {
       setResetToken(resetTokenFromUrl);
@@ -69,7 +73,20 @@ export default function App() {
       window.history.replaceState({}, document.title, "/");
     }
 
-    if (verifyToken) {
+    if (isVerifiedSuccess) {
+      toast.success('Email успешно подтвержден! Теперь вы можете войти.');
+      setShowAuthModal('login');
+      window.history.replaceState({}, document.title, "/");
+    } else if (verifyError) {
+      const errorMsgs: Record<string, string> = {
+        'invalid_token': 'Неверный или просроченный токен подтверждения',
+        'no_token': 'Токен подтверждения не предоставлен',
+        'server_error': 'Ошибка сервера при подтверждении'
+      };
+      toast.error(errorMsgs[verifyError] || 'Ошибка подтверждения email');
+      window.history.replaceState({}, document.title, "/");
+    } else if (verifyToken) {
+      // Legacy/Fallback client-side verification
       api.verifyEmail(verifyToken)
         .then(() => {
           toast.success('Email успешно подтвержден! Теперь вы можете войти.');
