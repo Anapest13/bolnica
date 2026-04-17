@@ -790,25 +790,45 @@ async function startServer() {
   });
 
   app.post('/api/auth/reset-password', async (req, res) => {
-    const { token, newPassword } = req.body;
+    let { token, newPassword } = req.body;
+    console.log(`[AUTH] Reset password attempt for token: "${token?.substring(0, 10)}..."`);
+    
     try {
+      if (!token || typeof token !== 'string') {
+        return res.status(400).json({ error: 'Токен отсутствует' });
+      }
+
+      const cleanToken = token.trim();
+      const now = new Date();
+
       const [rows]: any = await pool.query(
-        'SELECT * FROM patients WHERE reset_token = ? AND reset_token_expiry > NOW()',
-        [token]
+        'SELECT * FROM patients WHERE reset_token = ? AND reset_token_expiry > ?',
+        [cleanToken, now]
       );
       
       if (rows.length === 0) {
-        return res.status(400).json({ error: 'Неверный или просроченный токен' });
+        // Log specifically whether the token exists but is expired, or doesn't exist at all
+        const [anyToken]: any = await pool.query('SELECT reset_token_expiry FROM patients WHERE reset_token = ?', [cleanToken]);
+        if (anyToken.length > 0) {
+          console.warn(`[AUTH] Reset failed: Token exists but expired at ${anyToken[0].reset_token_expiry}. Current server time: ${now.toISOString()}`);
+        } else {
+          console.warn(`[AUTH] Reset failed: Token "${cleanToken.substring(0, 8)}..." not found in database.`);
+        }
+        return res.status(400).json({ error: 'Неверный или просроченный токен. Пожалуйста, запросите сброс пароля заново.' });
       }
       
+      const user = rows[0];
       const hashedPassword = bcrypt.hashSync(newPassword, 10);
+      
       await pool.query(
         'UPDATE patients SET password = ?, reset_token = NULL, reset_token_expiry = NULL WHERE id = ?',
-        [hashedPassword, rows[0].id]
+        [hashedPassword, user.id]
       );
       
+      console.log(`[AUTH] Success: Password reset for user ${user.email}`);
       res.json({ success: true, message: 'Пароль успешно изменен' });
     } catch (e) {
+      console.error('[AUTH] Reset Password Error:', e);
       res.status(500).json({ error: 'Database error' });
     }
   });
