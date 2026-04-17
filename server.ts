@@ -85,7 +85,7 @@ function renderStatusPage(title: string, message: string, isSuccess: boolean) {
             <h1>${title}</h1>
             <p>${message}</p>
             <a href="/" class="btn">Вернуться на главную</a>
-            ${isSuccess ? '<div class="redirect-text">Вы будете перенаправлены автоматически через 5 секунд...</div><script>setTimeout(() => window.location.href = "/", 5000)</script>' : ''}
+            ${isSuccess ? '<div class="redirect-text">Вы будете перенаправлены автоматически через 5 секунд...</div><script>setTimeout(() => window.location.href = "/?verified=true", 5000)</script>' : ''}
         </div>
     </body>
     </html>
@@ -527,8 +527,8 @@ async function startServer() {
       );
       const patientId = result.insertId;
 
-      // Determine App URL
-      let appUrl = process.env.APP_URL;
+      // Determine App URL and ensure no trailing slash
+      let appUrl = (process.env.APP_URL || '').replace(/\/$/, '');
       if (!appUrl || appUrl === 'MY_APP_URL' || appUrl === 'http://localhost:3000' || appUrl === 'https://bolnica.tuva.ru') {
         const protocol = req.headers['x-forwarded-proto'] || req.protocol;
         const host = req.get('host');
@@ -593,8 +593,8 @@ async function startServer() {
       const verificationToken = crypto.randomBytes(32).toString('hex');
       await pool.query('UPDATE patients SET verification_token = ? WHERE id = ?', [verificationToken, user.id]);
 
-      // Determine App URL
-      let appUrl = process.env.APP_URL;
+      // Determine App URL and ensure no trailing slash
+      let appUrl = (process.env.APP_URL || '').replace(/\/$/, '');
       if (!appUrl || appUrl === 'MY_APP_URL' || appUrl === 'http://localhost:3000' || appUrl === 'https://bolnica.tuva.ru') {
         const protocol = req.headers['x-forwarded-proto'] || req.protocol;
         const host = req.get('host');
@@ -742,8 +742,8 @@ async function startServer() {
       
       await pool.query('UPDATE patients SET reset_token = ?, reset_token_expiry = ? WHERE id = ?', [resetToken, resetTokenExpiry, rows[0].id]);
       
-      // Determine App URL
-      let appUrl = process.env.APP_URL;
+      // Determine App URL and ensure no trailing slash
+      let appUrl = (process.env.APP_URL || '').replace(/\/$/, '');
       if (!appUrl || appUrl === 'MY_APP_URL' || appUrl === 'http://localhost:3000' || appUrl === 'https://bolnica.tuva.ru') {
         const protocol = req.headers['x-forwarded-proto'] || req.protocol;
         const host = req.get('host');
