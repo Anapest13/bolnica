@@ -60,7 +60,7 @@ export default function App() {
 
     // Handle reset password token from URL
     const urlParams = new URLSearchParams(window.location.search);
-    const verifyToken = urlParams.get('verify') || (window.location.pathname === '/verify-email' ? urlParams.get('token') : null);
+    const verifyToken = urlParams.get('verify') || urlParams.get('token') || (window.location.pathname === '/verify-email' ? urlParams.get('token') : null);
     const resetTokenFromUrl = urlParams.get('reset') || (window.location.pathname === '/reset-password' ? urlParams.get('token') : null);
     
     // Server-side redirect flags
@@ -85,8 +85,8 @@ export default function App() {
       };
       toast.error(errorMsgs[verifyError] || 'Ошибка подтверждения email');
       window.history.replaceState({}, document.title, "/");
-    } else if (verifyToken) {
-      // Legacy/Fallback client-side verification
+    } else if (verifyToken && (window.location.pathname === '/verify-email' || window.location.pathname === '/verify-account')) {
+      // Client-side verification for specific paths
       api.verifyEmail(verifyToken)
         .then(() => {
           toast.success('Email успешно подтвержден! Теперь вы можете войти.');

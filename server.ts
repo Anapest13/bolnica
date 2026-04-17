@@ -526,7 +526,7 @@ async function startServer() {
         appUrl = `${protocol}://${host}`;
       }
 
-      const verificationLink = `${appUrl}/api/auth/verify-email?token=${verificationToken}`;
+      const verificationLink = `${appUrl}/verify-account?token=${verificationToken}`;
 
       try {
         console.log(`[AUTH] Registration: Sending verification link ${verificationLink} to ${email}`);
@@ -592,7 +592,7 @@ async function startServer() {
         appUrl = `${protocol}://${host}`;
       }
 
-      const verificationLink = `${appUrl}/api/auth/verify-email?token=${verificationToken}`;
+      const verificationLink = `${appUrl}/verify-account?token=${verificationToken}`;
 
       console.log(`[AUTH] Resending: Sending verification link ${verificationLink} to ${email}`);
       try {
@@ -630,36 +630,60 @@ async function startServer() {
     }
   });
 
-  app.get('/api/auth/verify-email', async (req, res) => {
+  // Verify email route with a visible status page
+  app.get('/verify-account', async (req, res) => {
     let { token } = req.query;
-    console.log(`[AUTH] Verification attempt with token: "${token}"`);
+    console.log(`[AUTH] Verification attempt via /verify-account with token: "${token}"`);
     
-    if (typeof token !== 'string') {
-      console.warn('[AUTH] Verification failed: No token provided');
-      return res.redirect('/?verify_error=no_token');
+    if (typeof token !== 'string' || !token.trim()) {
+      return res.status(400).send('<h1>Ошибка: Токен подтверждения не предоставлен.</h1>');
     }
 
     token = token.trim();
 
     try {
-      const [rows]: any = await pool.query('SELECT id, email, is_verified FROM patients WHERE verification_token = ?', [token]);
+      const [rows]: any = await pool.query('SELECT id, email FROM patients WHERE verification_token = ?', [token]);
       
       if (rows.length === 0) {
-        console.warn(`[AUTH] Verification failed: Token "${token}" not found in database`);
-        return res.redirect('/?verify_error=invalid_token');
+        return res.status(400).send(`
+          <div style="font-family: sans-serif; text-align: center; padding: 50px;">
+            <h1 style="color: #ef4444;">Ошибка подтверждения</h1>
+            <p>Неверный или просроченный токен.</p>
+            <a href="/" style="color: #0d9488; text-decoration: none; font-weight: bold;">Вернуться на главную</a>
+          </div>
+        `);
       }
       
       const user = rows[0];
-      console.log(`[AUTH] Found user ${user.email} (ID: ${user.id}) for token. is_verified was: ${user.is_verified}`);
-
       await pool.query('UPDATE patients SET is_verified = 1, verification_token = NULL WHERE id = ?', [user.id]);
-      console.log(`[AUTH] Success: User ${user.email} is now verified (is_verified = 1)`);
+      console.log(`[AUTH] Success: User ${user.email} verified via /verify-account`);
       
-      // Redirect to frontend with success flag
-      res.redirect('/?verified=true');
+      res.send(`
+        <div style="font-family: sans-serif; text-align: center; padding: 50px;">
+          <h1 style="color: #0d9488;">Email успешно подтвержден!</h1>
+          <p>Ваша учетная запись активирована. Сейчас вы будете перенаправлены на сайт...</p>
+          <script>
+            setTimeout(() => { window.location.href = '/?verified=true'; }, 2000);
+          </script>
+        </div>
+      `);
     } catch (e) {
-      console.error('[AUTH] Critical error during verification:', e);
-      res.redirect('/?verify_error=server_error');
+      console.error('[AUTH] Critical error during /verify-account:', e);
+      res.status(500).send('<h1>Ошибка сервера при подтверждении. Попробуйте позже.</h1>');
+    }
+  });
+
+  // Keep the API route for backwards compatibility / AJAX calls
+  app.get('/api/auth/verify-email', async (req, res) => {
+    let { token } = req.query;
+    if (typeof token !== 'string') return res.status(400).json({ error: 'Token required' });
+    try {
+      const [rows]: any = await pool.query('SELECT id FROM patients WHERE verification_token = ?', [token.trim()]);
+      if (rows.length === 0) return res.status(400).json({ error: 'Invalid token' });
+      await pool.query('UPDATE patients SET is_verified = 1, verification_token = NULL WHERE id = ?', [rows[0].id]);
+      res.json({ success: true });
+    } catch (e) {
+      res.status(500).json({ error: 'Server error' });
     }
   });
 
