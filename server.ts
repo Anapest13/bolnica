@@ -319,17 +319,26 @@ async function initDb() {
 
     // Add reset and verification columns
     try {
-      await pool.query("ALTER TABLE patients ADD COLUMN reset_token VARCHAR(255)");
-    } catch (e) {}
-    try {
-      await pool.query("ALTER TABLE patients ADD COLUMN reset_token_expiry DATETIME");
-    } catch (e) {}
-    try {
-      await pool.query("ALTER TABLE patients ADD COLUMN verification_token VARCHAR(255)");
-    } catch (e) {}
-    try {
-      await pool.query("ALTER TABLE patients ADD COLUMN is_verified BOOLEAN DEFAULT FALSE");
-    } catch (e) {}
+      const [columns]: any = await pool.query("SHOW COLUMNS FROM patients");
+      const columnNames = columns.map((c: any) => c.Field);
+      console.log(`[DB] Patients table columns: ${columnNames.join(', ')}`);
+      
+      if (!columnNames.includes('reset_token')) {
+        await pool.query("ALTER TABLE patients ADD COLUMN reset_token VARCHAR(255)");
+      }
+      if (!columnNames.includes('reset_token_expiry')) {
+        await pool.query("ALTER TABLE patients ADD COLUMN reset_token_expiry DATETIME");
+      }
+      if (!columnNames.includes('verification_token')) {
+        await pool.query("ALTER TABLE patients ADD COLUMN verification_token VARCHAR(255)");
+      }
+      if (!columnNames.includes('is_verified')) {
+        await pool.query("ALTER TABLE patients ADD COLUMN is_verified BOOLEAN DEFAULT FALSE");
+      }
+      console.log("[DB] Patients table columns verified successfully.");
+    } catch (e) {
+      console.error("[DB] Error verifying patients table columns:", e);
+    }
 
     await pool.query(`
       CREATE TABLE IF NOT EXISTS appointments (
@@ -635,41 +644,56 @@ async function startServer() {
     let { token } = req.query;
     console.log(`[AUTH] Verification attempt via /verify-account with token: "${token}"`);
     
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
+
     if (typeof token !== 'string' || !token.trim()) {
-      return res.status(400).send('<h1>Ошибка: Токен подтверждения не предоставлен.</h1>');
+      return res.status(400).send(renderStatusPage(
+        'Ошибка подтверждения',
+        'Токен подтверждения не предоставлен или пуст. Пожалуйста, убедитесь, что вы перешли по полной ссылке из письма.',
+        false
+      ));
     }
 
     token = token.trim();
 
     try {
-      const [rows]: any = await pool.query('SELECT id, email FROM patients WHERE verification_token = ?', [token]);
+      const [rows]: any = await pool.query(
+        'SELECT id, email, is_verified FROM patients WHERE verification_token = ? AND verification_token IS NOT NULL AND verification_token != ""', 
+        [token]
+      );
       
       if (rows.length === 0) {
-        return res.status(400).send(`
-          <div style="font-family: sans-serif; text-align: center; padding: 50px;">
-            <h1 style="color: #ef4444;">Ошибка подтверждения</h1>
-            <p>Неверный или просроченный токен.</p>
-            <a href="/" style="color: #0d9488; text-decoration: none; font-weight: bold;">Вернуться на главную</a>
-          </div>
-        `);
+        return res.status(400).send(renderStatusPage(
+          'Упс!',
+          'Ссылка недействительна. Возможно, аккаунт уже подтвержден или токен устарел. Попробуйте войти в систему.',
+          false
+        ));
       }
       
       const user = rows[0];
-      await pool.query('UPDATE patients SET is_verified = 1, verification_token = NULL WHERE id = ?', [user.id]);
-      console.log(`[AUTH] Success: User ${user.email} verified via /verify-account`);
+      const [updateResult]: any = await pool.query(
+        'UPDATE patients SET is_verified = 1, verification_token = NULL WHERE id = ?', 
+        [user.id]
+      );
       
-      res.send(`
-        <div style="font-family: sans-serif; text-align: center; padding: 50px;">
-          <h1 style="color: #0d9488;">Email успешно подтвержден!</h1>
-          <p>Ваша учетная запись активирована. Сейчас вы будете перенаправлены на сайт...</p>
-          <script>
-            setTimeout(() => { window.location.href = '/?verified=true'; }, 2000);
-          </script>
-        </div>
-      `);
+      if (updateResult.affectedRows > 0) {
+        console.log(`[AUTH] Success: User ${user.email} (ID: ${user.id}) verified successfully via /verify-account`);
+      } else {
+        console.warn(`[AUTH] Warning: Update query for verification affected 0 rows for user ${user.id}`);
+      }
+      
+      res.send(renderStatusPage(
+        'Готово!',
+        `Ваш email <b>${user.email}</b> успешно подтвержден. Ваша учетная запись активирована.`,
+        true
+      ));
     } catch (e) {
-      console.error('[AUTH] Critical error during /verify-account:', e);
-      res.status(500).send('<h1>Ошибка сервера при подтверждении. Попробуйте позже.</h1>');
+      console.error('[AUTH] Critical error during /verify-account handling:', e);
+      res.status(500).send(renderStatusPage(
+        'Ошибка сервера',
+        'Произошла техническая ошибка при активации аккаунта. Пожалуйста, попробуйте позже или обратитесь в поддержку.',
+        false
+      ));
     }
   });
 
